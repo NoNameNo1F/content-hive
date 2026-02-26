@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -30,12 +31,36 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ─── Secrets & credentials (NEVER commit these) ────────────────────────────────
 
-# vercel
+# All .env files except the safe example template
+.env*
+!.env.example
+
+# MCP config — contains Supabase service role key
+.mcp.json
+
+# ─── AI / Agent tooling (user-local, machine-specific) ────────────────────────
+
+# Claude Code project settings (allowed commands, user preferences)
+.claude/
+
+# MCP tooling directories
+.mcp/
+
+# AI agent output/task scratch directories
+outputs/
+tasks/
+
+# ─── Supabase ──────────────────────────────────────────────────────────────────
+
+# Local Supabase temp files (contain project-ref, DB pooler URL)
+supabase/.temp/
+supabase/.branches/
+
+# ─── Vercel ────────────────────────────────────────────────────────────────────
 .vercel
 
-# typescript
+# ─── TypeScript ────────────────────────────────────────────────────────────────
 *.tsbuildinfo
 next-env.d.ts

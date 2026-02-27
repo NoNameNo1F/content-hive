@@ -32,7 +32,7 @@ export async function searchPosts({
 
   let query = supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)', { count: 'exact' })
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)', { count: 'exact' })
     .range(from, to)
     .order('created_at', { ascending: false })
 

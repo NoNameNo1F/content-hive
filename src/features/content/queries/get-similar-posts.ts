@@ -24,7 +24,7 @@ export async function getSimilarPosts(
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
     .in('id', ids)
     .order('votes_count', { ascending: false })
     .limit(limit)

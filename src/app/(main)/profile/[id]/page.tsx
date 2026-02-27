@@ -65,7 +65,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   // Fetch published posts by this user
   const { data: publishedPosts } = await supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
     .eq('user_id', id)
     .order('created_at', { ascending: false })
 
@@ -82,7 +82,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
       const postIds = bookmarks.map((b) => b.post_id)
       const { data: bookmarkedPosts } = await supabase
         .from('posts')
-        .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+        .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
         .in('id', postIds)
       savedPosts = (bookmarkedPosts ?? []) as unknown as PostWithRelations[]
     }

@@ -7,7 +7,7 @@ export async function getPostById(id: string): Promise<PostWithRelations | null>
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
     .eq('id', id)
     .single()
 

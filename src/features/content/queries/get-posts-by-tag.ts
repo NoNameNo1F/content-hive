@@ -31,7 +31,7 @@ export async function getPostsByTag(
 
   let query = supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)', { count: 'exact' })
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)', { count: 'exact' })
     .in('id', postIds)
     .range(from, to)
 

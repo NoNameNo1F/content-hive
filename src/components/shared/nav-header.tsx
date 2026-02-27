@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { NavMenu } from '@/components/shared/nav-menu'
+import { ThemeToggle } from '@/components/shared/theme-toggle'
 
 export async function NavHeader() {
   const supabase = await createSupabaseServer()
@@ -35,7 +36,10 @@ export async function NavHeader() {
           ContentHive
         </Link>
 
-        <NavMenu user={navUser} isAdmin={isAdmin} />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <NavMenu user={navUser} isAdmin={isAdmin} />
+        </div>
       </div>
     </header>
   )

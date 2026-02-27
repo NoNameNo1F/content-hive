@@ -211,9 +211,10 @@ export function ContentGraph({ categories }: ContentGraphProps) {
                 top: Math.max(preview.y - 220, 16),
                 zIndex: 9999,
                 width: 320,
-                pointerEvents: 'none',
               }}
               className="rounded-xl border bg-card shadow-2xl overflow-hidden"
+              onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current) }}
+              onMouseLeave={() => { hideTimer.current = setTimeout(() => setPreview(null), 150) }}
             >
               <VideoEmbed url={preview.url} />
             </div>,

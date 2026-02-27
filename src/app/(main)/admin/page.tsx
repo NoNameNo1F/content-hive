@@ -29,7 +29,7 @@ export default async function AdminPage() {
   // Fetch all posts (RLS admin policy allows this)
   const { data: posts } = await supabase
     .from('posts')
-    .select('*, profiles(id, username), post_tags(tag)')
+    .select('*, profiles!posts_user_id_fkey(id, username), post_tags(tag)')
     .order('created_at', { ascending: false })
     .limit(100)
 

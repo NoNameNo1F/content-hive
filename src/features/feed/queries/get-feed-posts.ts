@@ -38,7 +38,7 @@ export async function getFeedPosts({
         p_limit:      limit,
         p_offset:     offset,
       })
-      .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+      .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
 
     const { data, error } = await rpc
     if (error) throw new Error(`getFeedPosts(rpc): ${error.message}`)
@@ -48,7 +48,7 @@ export async function getFeedPosts({
   // ── Guest: plain public feed ────────────────────────────────────────────────
   let query = supabase
     .from('posts')
-    .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)')
     .eq('visibility', 'public')
     .range(offset, offset + limit - 1)
 

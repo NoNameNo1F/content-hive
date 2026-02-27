@@ -34,14 +34,14 @@ export function BarChartCard({ title, data, defaultColor = DEFAULT_COLOR }: BarC
         <BarChart data={data} barCategoryGap="30%">
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
             allowDecimals={false}
             domain={[0, max]}
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
             tickLine={false}
             axisLine={false}
             width={24}
@@ -54,7 +54,10 @@ export function BarChartCard({ title, data, defaultColor = DEFAULT_COLOR }: BarC
               border: '1px solid hsl(var(--border))',
               background: 'hsl(var(--card))',
               color: 'hsl(var(--foreground))',
+              boxShadow: '0 4px 12px hsl(var(--background) / 0.5)',
             }}
+            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+            itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
             formatter={(v: number | undefined) => [v ?? 0, 'Posts']}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>

@@ -16,6 +16,12 @@ export default function DashboardLoading() {
         ))}
       </div>
 
+      {/* Activity chart */}
+      <div className="rounded-xl border bg-card p-5 space-y-3">
+        <div className="h-4 w-40 rounded bg-muted" />
+        <div className="h-40 rounded bg-muted" />
+      </div>
+
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -42,6 +48,18 @@ export default function DashboardLoading() {
             ))}
           </div>
         ))}
+      </div>
+      {/* Calendar */}
+      <div className="rounded-xl border bg-card p-5 space-y-3">
+        <div className="flex justify-between">
+          <div className="h-4 w-36 rounded bg-muted" />
+          <div className="h-6 w-32 rounded bg-muted" />
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded bg-muted" />
+          ))}
+        </div>
       </div>
     </div>
   )

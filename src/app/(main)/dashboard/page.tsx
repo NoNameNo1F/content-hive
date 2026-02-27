@@ -4,6 +4,8 @@ import { getDashboardStats } from '@/features/dashboard/queries/get-dashboard-st
 import { StatCard } from '@/features/dashboard/components/stat-card'
 import { BarChartCard } from '@/features/dashboard/components/bar-chart-card'
 import { TopPostsTable } from '@/features/dashboard/components/top-posts-table'
+import { ActivityChart } from '@/features/dashboard/components/activity-chart'
+import { ContentCalendar } from '@/features/dashboard/components/content-calendar'
 
 export const metadata = { title: 'Dashboard — ContentHive' }
 
@@ -46,7 +48,9 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const stats = await getDashboardStats()
-  const { totals, byStatus, byType, byCategory, topByVotes, topBySaves } = stats
+  const { totals, byStatus, byType, byCategory, topByVotes, topBySaves, byWeek, byDay7, byDate } = stats
+
+  const postsSparkline = byDay7.map((d) => d.count)
 
   const statusChartData = byStatus.map((s) => ({
     name:  STATUS_LABELS[s.status] ?? s.status,
@@ -82,6 +86,7 @@ export default async function DashboardPage() {
           label="Total posts"
           value={totals.posts}
           accent="text-foreground"
+          sparkline={postsSparkline}
         />
         <StatCard
           label="Team members"
@@ -101,6 +106,9 @@ export default async function DashboardPage() {
           accent="text-amber-600 dark:text-amber-400"
         />
       </div>
+
+      {/* Activity chart — full width */}
+      <ActivityChart data={byWeek} />
 
       {/* Charts row */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -131,6 +139,9 @@ export default async function DashboardPage() {
           sortKey="saves_count"
         />
       </div>
+
+      {/* Content calendar — full width */}
+      <ContentCalendar byDate={byDate} />
     </div>
   )
 }

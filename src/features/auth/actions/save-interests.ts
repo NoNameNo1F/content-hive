@@ -43,5 +43,5 @@ export async function saveInterests(
     return { success: false, error: 'Failed to save interests. Please try again.' }
   }
 
-  redirect('/feed')
+  redirect('/onboarding/tour')
 }

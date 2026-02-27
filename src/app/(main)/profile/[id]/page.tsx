@@ -118,7 +118,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
           <p className="text-sm font-medium text-muted-foreground">Interests</p>
           <div className="flex flex-wrap gap-1">
             {interestTags.map((tag) => (
-              <Link key={tag} href={`/search?tags=${tag}`}>
+              <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
                 <Badge variant="secondary" className="hover:bg-accent text-xs">
                   {tag}
                 </Badge>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { createPost } from '@/features/content/actions/create-post'
+import { updatePost } from '@/features/content/actions/update-post'
 import { TagInput } from './tag-input'
 import { UrlInput } from './url-input'
 import { VideoEmbed } from './video-embed'
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
@@ -20,26 +20,50 @@ import {
 } from '@/components/ui/select'
 import type { ActionResult, Category, ContentStatus, PostType } from '@/types'
 
-interface PostFormProps {
+interface EditPostFormProps {
+  postId: string
+  initialTitle: string
+  initialDescription: string
+  initialUrl: string
+  initialThumbnail: string
+  initialTags: string[]
+  initialVisibility: 'public' | 'team'
+  initialCategoryId: string
+  initialStatus: ContentStatus
+  initialCreatorHandle: string
+  postType: PostType
   categories: Category[]
 }
 
-export function PostForm({ categories }: PostFormProps) {
+export function EditPostForm({
+  postId,
+  initialTitle,
+  initialDescription,
+  initialUrl,
+  initialThumbnail,
+  initialTags,
+  initialVisibility,
+  initialCategoryId,
+  initialStatus,
+  initialCreatorHandle,
+  postType,
+  categories,
+}: EditPostFormProps) {
+  const boundAction = updatePost.bind(null, postId)
   const [state, action, isPending] = useActionState<ActionResult | null, FormData>(
-    createPost,
+    boundAction,
     null
   )
 
-  const [type, setType] = useState<PostType>('link')
-  const [url, setUrl] = useState('')
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [thumbnail, setThumbnail] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [visibility, setVisibility] = useState<'public' | 'team'>('public')
-  const [categoryId, setCategoryId] = useState<string>('')
-  const [status, setStatus] = useState<ContentStatus>('available')
-  const [creatorHandle, setCreatorHandle] = useState('')
+  const [title, setTitle] = useState(initialTitle)
+  const [description, setDescription] = useState(initialDescription)
+  const [url, setUrl] = useState(initialUrl)
+  const [thumbnail, setThumbnail] = useState(initialThumbnail)
+  const [tags, setTags] = useState<string[]>(initialTags)
+  const [visibility, setVisibility] = useState<'public' | 'team'>(initialVisibility)
+  const [categoryId, setCategoryId] = useState(initialCategoryId)
+  const [status, setStatus] = useState<ContentStatus>(initialStatus)
+  const [creatorHandle, setCreatorHandle] = useState(initialCreatorHandle)
 
   function handleOgFetch(og: { title?: string | null; description?: string | null; image?: string | null }) {
     if (og.title && !title) setTitle(og.title)
@@ -50,8 +74,6 @@ export function PostForm({ categories }: PostFormProps) {
   return (
     <form
       action={(formData) => {
-        // Inject controlled state values into the FormData
-        formData.set('type', type)
         formData.set('title', title)
         formData.set('description', description)
         formData.set('url', url)
@@ -60,7 +82,6 @@ export function PostForm({ categories }: PostFormProps) {
         formData.set('categoryId', categoryId)
         formData.set('status', status)
         formData.set('creatorHandle', creatorHandle)
-        // tags are injected by the hidden inputs inside TagInput
         action(formData)
       }}
       className="space-y-6"
@@ -71,31 +92,27 @@ export function PostForm({ categories }: PostFormProps) {
         </Alert>
       )}
 
-      {/* Post type */}
+      {/* Post type — read-only, cannot change after creation */}
       <div className="space-y-2">
         <Label>Post type</Label>
-        <Tabs value={type} onValueChange={(v) => { setType(v as PostType); setUrl('') }}>
-          <TabsList className="w-full">
-            <TabsTrigger value="link" className="flex-1">Link</TabsTrigger>
-            <TabsTrigger value="video" className="flex-1">Video</TabsTrigger>
-            <TabsTrigger value="text" className="flex-1">Text</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div>
+          <Badge variant="secondary" className="capitalize">{postType}</Badge>
+          <p className="mt-1 text-xs text-muted-foreground">Post type cannot be changed after creation.</p>
+        </div>
       </div>
 
       {/* URL — shown for link and video */}
-      {(type === 'link' || type === 'video') && (
+      {(postType === 'link' || postType === 'video') && (
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
           <UrlInput
             name="url"
             value={url}
             onChange={setUrl}
-            onOgFetch={type === 'link' ? handleOgFetch : undefined}
-            placeholder={type === 'video' ? 'YouTube, Vimeo, or TikTok URL' : 'https://'}
+            onOgFetch={postType === 'link' ? handleOgFetch : undefined}
+            placeholder={postType === 'video' ? 'YouTube, Vimeo, or TikTok URL' : 'https://'}
           />
-          {/* Video embed preview */}
-          {type === 'video' && url && (
+          {postType === 'video' && url && (
             <div className="pt-2">
               <VideoEmbed url={url} />
             </div>
@@ -140,11 +157,12 @@ export function PostForm({ categories }: PostFormProps) {
       {categories.length > 0 && (
         <div className="space-y-2">
           <Label>Category</Label>
-          <Select value={categoryId} onValueChange={setCategoryId}>
+          <Select value={categoryId || '_none'} onValueChange={(v) => setCategoryId(v === '_none' ? '' : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select a category (optional)" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="_none">No category</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.name}
@@ -156,7 +174,7 @@ export function PostForm({ categories }: PostFormProps) {
         </div>
       )}
 
-      {/* Creator handle — for TikTok/social attribution */}
+      {/* Creator handle */}
       <div className="space-y-2">
         <Label htmlFor="creatorHandle">Creator handle</Label>
         <Input
@@ -201,9 +219,14 @@ export function PostForm({ categories }: PostFormProps) {
         <input type="hidden" name="visibility" value={visibility} />
       </div>
 
-      <Button type="submit" disabled={isPending} className="w-full">
-        {isPending ? 'Publishing…' : 'Publish post'}
-      </Button>
+      <div className="flex gap-3">
+        <Button type="submit" disabled={isPending} className="flex-1">
+          {isPending ? 'Saving…' : 'Save changes'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => history.back()}>
+          Cancel
+        </Button>
+      </div>
     </form>
   )
 }

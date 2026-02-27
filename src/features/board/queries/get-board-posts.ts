@@ -1,0 +1,25 @@
+import { createSupabaseServer } from '@/lib/supabase/server'
+import type { ContentStatus, PostWithRelations } from '@/types'
+
+export type BoardData = Record<ContentStatus, PostWithRelations[]>
+
+/** Returns all posts visible to the current user, grouped by status. */
+export async function getBoardPosts(): Promise<BoardData> {
+  const supabase = await createSupabaseServer()
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`getBoardPosts: ${error.message}`)
+
+  const posts = (data ?? []) as unknown as PostWithRelations[]
+
+  return {
+    available: posts.filter((p) => p.status === 'available'),
+    in_use:    posts.filter((p) => p.status === 'in_use'),
+    used:      posts.filter((p) => p.status === 'used'),
+    rejected:  posts.filter((p) => p.status === 'rejected'),
+  }
+}

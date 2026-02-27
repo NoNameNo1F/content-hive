@@ -5,8 +5,25 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { getPostById } from '@/features/content/queries/get-post'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { DeletePostButton } from '@/features/content/components/delete-post-button'
+import { PostStatusUpdater } from '@/features/content/components/post-status-updater'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import type { ContentStatus } from '@/types'
+
+const STATUS_BADGE_STYLES: Record<ContentStatus, string> = {
+  available: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  in_use:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  used:      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  rejected:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+}
+
+const STATUS_LABELS: Record<ContentStatus, string> = {
+  available: 'Available',
+  in_use:    'In use',
+  used:      'Used',
+  rejected:  'Rejected',
+}
 
 interface PostPageProps {
   params: Promise<{ id: string }>
@@ -41,22 +58,47 @@ export default async function PostPage({ params }: PostPageProps) {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" className="capitalize">{post.type}</Badge>
           {post.visibility === 'team' && (
             <Badge variant="outline">Team</Badge>
+          )}
+          {/* Status badge — visible to all */}
+          {!isOwner && (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[post.status as ContentStatus]}`}>
+              {STATUS_LABELS[post.status as ContentStatus]}
+            </span>
           )}
         </div>
 
         <h1 className="text-3xl font-bold leading-tight">{post.title}</h1>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        {/* Creator handle */}
+        {post.creator_handle && (
+          <p className="text-sm text-muted-foreground">
+            Creator:{' '}
+            <span className="font-medium text-foreground">{post.creator_handle}</span>
+          </p>
+        )}
+
+        <div className="flex items-center justify-between gap-4 flex-wrap text-sm text-muted-foreground">
           <span>by {author?.username ?? 'Unknown'}</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Owner: inline status updater */}
+            {isOwner && (
+              <PostStatusUpdater postId={post.id} currentStatus={post.status as ContentStatus} />
+            )}
             {user && (
               <BookmarkButton postId={post.id} initialBookmarked={isBookmarked} />
             )}
-            {isOwner && <DeletePostButton postId={post.id} />}
+            {isOwner && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/post/${post.id}/edit`}>Edit</Link>
+                </Button>
+                <DeletePostButton postId={post.id} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -100,7 +142,7 @@ export default async function PostPage({ params }: PostPageProps) {
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <Link key={tag} href={`/search?tags=${tag}`}>
+            <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
               <Badge variant="outline" className="hover:bg-accent">{tag}</Badge>
             </Link>
           ))}

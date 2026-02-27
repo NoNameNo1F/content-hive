@@ -15,6 +15,8 @@ export async function createPost(
   const url = (formData.get('url') as string)?.trim() || undefined
   const thumbnail = (formData.get('thumbnail') as string)?.trim() || undefined
   const visibility = (formData.get('visibility') as CreatePostInput['visibility']) ?? 'public'
+  const status = (formData.get('status') as CreatePostInput['status']) ?? 'available'
+  const creatorHandle = (formData.get('creatorHandle') as string)?.trim() || undefined
   const tags = (formData.getAll('tags') as string[]).filter(Boolean).slice(0, MAX_TAGS_PER_POST)
   const categoryId = (formData.get('categoryId') as string) || undefined
 
@@ -29,7 +31,7 @@ export async function createPost(
 
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .insert({ user_id: user.id, type, title, description, url, thumbnail, visibility })
+    .insert({ user_id: user.id, type, title, description, url, thumbnail, visibility, status, creator_handle: creatorHandle })
     .select('id')
     .single()
 

@@ -1,11 +1,12 @@
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
-import type { PostWithRelations } from '@/types'
+import type { ContentStatus, PostWithRelations } from '@/types'
 
 interface FeedParams {
   userId?: string | null
   page?: number
   sortBy?: 'recent' | 'popular'
+  status?: ContentStatus
 }
 
 /** Returns paginated posts for the feed, filtered by interests for authenticated users. */
@@ -13,6 +14,7 @@ export async function getFeedPosts({
   userId,
   page = 0,
   sortBy = 'recent',
+  status,
 }: FeedParams): Promise<PostWithRelations[]> {
   const supabase = await createSupabaseServer()
   const from = page * DEFAULT_PAGE_SIZE
@@ -27,6 +29,10 @@ export async function getFeedPosts({
     query = query.order('saves_count', { ascending: false })
   } else {
     query = query.order('created_at', { ascending: false })
+  }
+
+  if (status) {
+    query = query.eq('status', status)
   }
 
   if (userId) {

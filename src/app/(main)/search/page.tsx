@@ -4,15 +4,18 @@ import { searchPosts } from '@/features/search/queries/search-posts'
 import { SearchBar } from '@/features/search/components/search-bar'
 import { SearchFilters } from '@/features/search/components/search-filters'
 import { SearchResults } from '@/features/search/components/search-results'
-import type { Category } from '@/types'
+import type { Category, ContentStatus } from '@/types'
 
 export const metadata = { title: 'Search — ContentHive' }
+
+const VALID_STATUSES = new Set(['available', 'in_use', 'used', 'rejected'])
 
 interface SearchPageProps {
   searchParams: Promise<{
     q?: string
     tags?: string | string[]
     categoryId?: string
+    status?: string
     page?: string
   }>
 }
@@ -26,6 +29,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       : [params.tags]
     : []
   const categoryId = params.categoryId
+  const status = VALID_STATUSES.has(params.status ?? '') ? (params.status as ContentStatus) : undefined
   const page = Number(params.page ?? '0')
 
   const supabase = await createSupabaseServer()
@@ -34,7 +38,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   } = await supabase.auth.getUser()
 
   const [{ posts, total }, categoriesResult] = await Promise.all([
-    searchPosts({ q, tags, categoryId, page }),
+    searchPosts({ q, tags, categoryId, status, page }),
     supabase.from('categories').select('id, name, slug, created_at').order('name'),
   ])
 

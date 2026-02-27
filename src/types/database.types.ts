@@ -152,10 +152,12 @@ export type Database = {
       posts: {
         Row: {
           created_at: string
+          creator_handle: string | null
           description: string | null
           fts: unknown
           id: string
           saves_count: number
+          status: Database["public"]["Enums"]["content_status"]
           thumbnail: string | null
           title: string
           type: Database["public"]["Enums"]["post_type"]
@@ -166,10 +168,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creator_handle?: string | null
           description?: string | null
           fts?: unknown
           id?: string
           saves_count?: number
+          status?: Database["public"]["Enums"]["content_status"]
           thumbnail?: string | null
           title: string
           type: Database["public"]["Enums"]["post_type"]
@@ -180,10 +184,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creator_handle?: string | null
           description?: string | null
           fts?: unknown
           id?: string
           saves_count?: number
+          status?: Database["public"]["Enums"]["content_status"]
           thumbnail?: string | null
           title?: string
           type?: Database["public"]["Enums"]["post_type"]
@@ -257,6 +263,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      content_status: "available" | "in_use" | "used" | "rejected"
       post_type: "video" | "link" | "text"
       post_visibility: "public" | "team"
       user_role: "visitor" | "member" | "admin"
@@ -390,6 +397,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      content_status: ["available", "in_use", "used", "rejected"],
       post_type: ["video", "link", "text"],
       post_visibility: ["public", "team"],
       user_role: ["visitor", "member", "admin"],

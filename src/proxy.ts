@@ -4,6 +4,9 @@ import { createSupabaseMiddleware } from '@/lib/supabase/middleware'
 /** Routes that require authentication. Visitors are redirected to /login. */
 const PROTECTED_ROUTES = ['/create', '/profile/edit', '/admin', '/onboarding']
 
+/** Dynamic route patterns that require authentication. */
+const PROTECTED_PATTERNS = [/^\/post\/[^/]+\/edit$/]
+
 /** Routes that authenticated users should not visit (e.g. login when logged in). */
 const AUTH_ROUTES = ['/login', '/register']
 
@@ -17,7 +20,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+  const isProtected =
+    PROTECTED_ROUTES.some((route) => pathname.startsWith(route)) ||
+    PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname))
+
+  if (!user && isProtected) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     return NextResponse.redirect(loginUrl)

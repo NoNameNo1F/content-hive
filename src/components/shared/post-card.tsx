@@ -2,7 +2,29 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
-import type { PostWithRelations } from '@/types'
+import type { ContentStatus, PostWithRelations } from '@/types'
+
+const STATUS_STYLES: Record<ContentStatus, string> = {
+  available: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  in_use:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  used:      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  rejected:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+}
+
+const STATUS_LABELS: Record<ContentStatus, string> = {
+  available: 'Available',
+  in_use:    'In use',
+  used:      'Used',
+  rejected:  'Rejected',
+}
+
+function StatusBadge({ status }: { status: ContentStatus }) {
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}>
+      {STATUS_LABELS[status]}
+    </span>
+  )
+}
 
 interface PostCardProps {
   post: PostWithRelations
@@ -67,7 +89,7 @@ export function PostCard({ post, isBookmarked = false, currentUserId }: PostCard
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.slice(0, 5).map((tag) => (
-              <Link key={tag} href={`/search?tags=${tag}`}>
+              <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
                 <Badge variant="outline" className="text-xs hover:bg-accent">
                   {tag}
                 </Badge>
@@ -79,10 +101,20 @@ export function PostCard({ post, isBookmarked = false, currentUserId }: PostCard
           </div>
         )}
 
-        {/* Footer: author + saves count */}
+        {/* Creator handle */}
+        {post.creator_handle && (
+          <p className="text-xs text-muted-foreground">
+            Creator: <span className="font-medium">{post.creator_handle}</span>
+          </p>
+        )}
+
+        {/* Footer: author + status + saves count */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>by {author?.username ?? 'Unknown'}</span>
-          <span>{post.saves_count} save{post.saves_count !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-2">
+            <StatusBadge status={post.status} />
+            <span>{post.saves_count} save{post.saves_count !== 1 ? 's' : ''}</span>
+          </div>
         </div>
       </div>
     </article>

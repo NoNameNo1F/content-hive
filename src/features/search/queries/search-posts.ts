@@ -1,11 +1,12 @@
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { DEFAULT_PAGE_SIZE, SEARCH_MIN_QUERY_LENGTH } from '@/lib/constants'
-import type { PostWithRelations } from '@/types'
+import type { ContentStatus, PostWithRelations } from '@/types'
 
 interface SearchParams {
   q?: string
   tags?: string[]
   categoryId?: string
+  status?: ContentStatus
   page?: number
 }
 
@@ -22,6 +23,7 @@ export async function searchPosts({
   q,
   tags,
   categoryId,
+  status,
   page = 0,
 }: SearchParams): Promise<SearchResult> {
   const supabase = await createSupabaseServer()
@@ -36,6 +38,10 @@ export async function searchPosts({
 
   if (q && q.length >= SEARCH_MIN_QUERY_LENGTH) {
     query = query.textSearch('fts', q, { type: 'websearch' })
+  }
+
+  if (status) {
+    query = query.eq('status', status)
   }
 
   if (categoryId) {

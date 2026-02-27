@@ -10,7 +10,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SUGGESTED_INTEREST_TAGS } from '@/lib/constants'
-import type { Category } from '@/types'
+import type { Category, ContentStatus } from '@/types'
+
+const STATUS_OPTIONS: { value: ContentStatus; label: string; className: string }[] = [
+  { value: 'available', label: 'Available', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+  { value: 'in_use',    label: 'In use',    className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+  { value: 'used',      label: 'Used',      className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  { value: 'rejected',  label: 'Rejected',  className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+]
 
 interface SearchFiltersProps {
   categories: Category[]
@@ -23,6 +30,7 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
 
   const activeTags = searchParams.getAll('tags')
   const activeCategory = searchParams.get('categoryId') ?? ''
+  const activeStatus = (searchParams.get('status') ?? '') as ContentStatus | ''
 
   function setParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString())
@@ -51,6 +59,26 @@ export function SearchFilters({ categories }: SearchFiltersProps) {
 
   return (
     <div className="space-y-4">
+      {/* Status filter */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Content status</p>
+        <div className="flex flex-wrap gap-1">
+          {STATUS_OPTIONS.map(({ value, label, className }) => {
+            const isActive = activeStatus === value
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setParam('status', isActive ? null : value)}
+                className={`rounded-full px-2 py-0.5 text-xs font-medium transition-opacity ${className} ${isActive ? 'ring-2 ring-offset-1 ring-current' : 'opacity-70 hover:opacity-100'}`}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Category filter */}
       {categories.length > 0 && (
         <div className="space-y-2">

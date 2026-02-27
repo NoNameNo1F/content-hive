@@ -4,16 +4,20 @@ import { getUserInterests } from '@/features/auth/queries/get-interests'
 import { getFeedPosts } from '@/features/feed/queries/get-feed-posts'
 import { FeedList } from '@/features/feed/components/feed-list'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
+import type { ContentStatus } from '@/types'
 
 export const metadata = { title: 'Feed — ContentHive' }
 
+const VALID_STATUSES = new Set(['available', 'in_use', 'used', 'rejected'])
+
 interface FeedPageProps {
-  searchParams: Promise<{ sort?: string }>
+  searchParams: Promise<{ sort?: string; status?: string }>
 }
 
 export default async function FeedPage({ searchParams }: FeedPageProps) {
-  const { sort } = await searchParams
+  const { sort, status: statusParam } = await searchParams
   const sortBy = sort === 'popular' ? 'popular' : 'recent'
+  const status = VALID_STATUSES.has(statusParam ?? '') ? (statusParam as ContentStatus) : undefined
 
   const supabase = await createSupabaseServer()
   const {
@@ -28,7 +32,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }
   }
 
-  const posts = await getFeedPosts({ userId: user?.id, page: 0, sortBy })
+  const posts = await getFeedPosts({ userId: user?.id, page: 0, sortBy, status })
 
   // Fetch bookmarked post IDs for current user
   let bookmarkedIds: string[] = []
@@ -61,6 +65,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         currentUserId={user?.id ?? null}
         hasMore={posts.length === DEFAULT_PAGE_SIZE}
         userId={user?.id ?? null}
+        initialStatus={status}
       />
     </div>
   )

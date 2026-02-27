@@ -12,6 +12,7 @@ type BookmarkRow = Database['public']['Tables']['bookmarks']['Row']
 export type PostType = Database['public']['Enums']['post_type']
 export type PostVisibility = Database['public']['Enums']['post_visibility']
 export type UserRole = Database['public']['Enums']['user_role']
+export type ContentStatus = Database['public']['Enums']['content_status']
 
 // ─── Domain types ─────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export interface CreatePostInput {
   url?: string
   thumbnail?: string
   visibility: PostVisibility
+  status: ContentStatus
+  creator_handle?: string
   tags: string[]
   categoryId?: string
 }

@@ -38,7 +38,7 @@ export default async function ChatIdPage({ params }: ChatIdPageProps) {
   const hasApiKey = savedProviders.has(conv.provider)
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden -mx-4 sm:-mx-6 lg:-mx-8">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
       <ChatSidebar
         conversations={conversations}
         savedProviders={[...savedProviders] as LLMProvider[]}

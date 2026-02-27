@@ -73,6 +73,9 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   <Link href={`/profile/${user.id}`}>Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/board">Board</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -128,6 +131,13 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   Feed
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium hover:underline"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Dashboard
                 </Link>
                 <Link
                   href="/board"

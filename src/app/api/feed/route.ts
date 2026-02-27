@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFeedPosts } from '@/features/feed/queries/get-feed-posts'
+import { getFeedPosts, type FeedSortBy } from '@/features/feed/queries/get-feed-posts'
 import type { ContentStatus } from '@/types'
 
 const VALID_STATUSES = new Set(['available', 'in_use', 'used', 'rejected'])
+const VALID_SORTS = new Set<string>(['new', 'hot', 'top'])
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const userId = searchParams.get('userId') || undefined
   const page = Number(searchParams.get('page') ?? '0')
-  const sortBy = (searchParams.get('sortBy') as 'recent' | 'popular') ?? 'recent'
+  const sortParam = searchParams.get('sortBy')
+  const sortBy: FeedSortBy = VALID_SORTS.has(sortParam ?? '') ? (sortParam as FeedSortBy) : 'hot'
   const statusParam = searchParams.get('status')
   const status = VALID_STATUSES.has(statusParam ?? '') ? (statusParam as ContentStatus) : undefined
 

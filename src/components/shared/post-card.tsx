@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
 import { VideoEmbed } from '@/features/content/components/video-embed'
+import { VoteButtons } from '@/features/content/components/vote-buttons'
 import type { ContentStatus, PostWithRelations } from '@/types'
 
 const STATUS_STYLES: Record<ContentStatus, string> = {
@@ -33,11 +34,11 @@ function StatusBadge({ status }: { status: ContentStatus }) {
 interface PostCardProps {
   post: PostWithRelations
   isBookmarked?: boolean
-  /** Pass the current user's ID so the bookmark button knows whether the user is logged in */
   currentUserId?: string | null
+  userVote?: 1 | -1 | null
 }
 
-export function PostCard({ post, isBookmarked = false, currentUserId }: PostCardProps) {
+export function PostCard({ post, isBookmarked = false, currentUserId, userVote = null }: PostCardProps) {
   const [showVideo, setShowVideo] = useState(false)
 
   const author = post.profiles
@@ -165,9 +166,23 @@ export function PostCard({ post, isBookmarked = false, currentUserId }: PostCard
           </p>
         )}
 
-        {/* Footer: author + status + saves count */}
+        {/* Footer: votes + author + status + saves */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>by {author?.username ?? 'Unknown'}</span>
+          <div className="flex items-center gap-3">
+            {currentUserId && (
+              <VoteButtons
+                postId={post.id}
+                initialVotesCount={post.votes_count ?? 0}
+                initialUserVote={userVote}
+              />
+            )}
+            {!currentUserId && (
+              <span className="tabular-nums">
+                {post.votes_count ?? 0} vote{(post.votes_count ?? 0) !== 1 ? 's' : ''}
+              </span>
+            )}
+            <span>by {author?.username ?? 'Unknown'}</span>
+          </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={post.status} />
             <span>{post.saves_count} save{post.saves_count !== 1 ? 's' : ''}</span>

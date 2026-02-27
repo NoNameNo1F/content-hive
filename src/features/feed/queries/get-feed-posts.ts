@@ -2,10 +2,12 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import type { ContentStatus, PostWithRelations } from '@/types'
 
+export type FeedSortBy = 'new' | 'hot' | 'top'
+
 interface FeedParams {
   userId?: string | null
   page?: number
-  sortBy?: 'recent' | 'popular'
+  sortBy?: FeedSortBy
   status?: ContentStatus
 }
 
@@ -13,7 +15,7 @@ interface FeedParams {
 export async function getFeedPosts({
   userId,
   page = 0,
-  sortBy = 'recent',
+  sortBy = 'hot',
   status,
 }: FeedParams): Promise<PostWithRelations[]> {
   const supabase = await createSupabaseServer()
@@ -25,8 +27,10 @@ export async function getFeedPosts({
     .select('*, profiles(id, username, avatar_url), post_tags(tag)')
     .range(from, to)
 
-  if (sortBy === 'popular') {
-    query = query.order('saves_count', { ascending: false })
+  if (sortBy === 'hot') {
+    query = query.order('votes_count', { ascending: false }).order('created_at', { ascending: false })
+  } else if (sortBy === 'top') {
+    query = query.order('saves_count', { ascending: false }).order('created_at', { ascending: false })
   } else {
     query = query.order('created_at', { ascending: false })
   }

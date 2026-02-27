@@ -21,7 +21,7 @@ export default async function RootPage() {
   }
 
   // Visitors: show recent public posts
-  const posts = await getFeedPosts({ userId: null, page: 0, sortBy: 'recent' })
+  const posts = await getFeedPosts({ userId: null, page: 0, sortBy: 'new' })
 
   return (
     <div className="min-h-screen bg-background">

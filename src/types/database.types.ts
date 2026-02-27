@@ -149,6 +149,42 @@ export type Database = {
           },
         ]
       }
+      post_votes: {
+        Row: {
+          created_at: string
+          direction: number
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: number
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: number
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           created_at: string
@@ -165,6 +201,7 @@ export type Database = {
           url: string | null
           user_id: string
           visibility: Database["public"]["Enums"]["post_visibility"]
+          votes_count: number
         }
         Insert: {
           created_at?: string
@@ -181,6 +218,7 @@ export type Database = {
           url?: string | null
           user_id: string
           visibility?: Database["public"]["Enums"]["post_visibility"]
+          votes_count?: number
         }
         Update: {
           created_at?: string
@@ -197,6 +235,7 @@ export type Database = {
           url?: string | null
           user_id?: string
           visibility?: Database["public"]["Enums"]["post_visibility"]
+          votes_count?: number
         }
         Relationships: [
           {

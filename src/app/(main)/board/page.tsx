@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { getBoardPosts } from '@/features/board/queries/get-board-posts'
+import { getUserVotes } from '@/features/content/queries/get-user-votes'
 import { BoardCard } from '@/features/board/components/board-card'
 
 export const metadata = { title: 'Content Board — ContentHive' }
@@ -22,12 +23,16 @@ export default async function BoardPage() {
 
   const board = await getBoardPosts()
 
+  // Fetch vote statuses for all board posts in one query
+  const allPosts = Object.values(board).flat()
+  const userVotes = await getUserVotes(user.id, allPosts.map((p) => p.id))
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Content Board</h1>
         <p className="text-muted-foreground">
-          Track your content through the workflow — click the buttons on a card to move it forward or back.
+          Track content through the workflow. Vote to surface the best ideas.
         </p>
       </div>
 
@@ -55,7 +60,12 @@ export default async function BoardPage() {
                   </div>
                 ) : (
                   posts.map((post) => (
-                    <BoardCard key={post.id} post={post} currentUserId={user.id} />
+                    <BoardCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={user.id}
+                      userVote={userVotes[post.id] ?? null}
+                    />
                   ))
                 )}
               </div>

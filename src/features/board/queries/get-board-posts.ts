@@ -10,6 +10,7 @@ export async function getBoardPosts(): Promise<BoardData> {
   const { data, error } = await supabase
     .from('posts')
     .select('*, profiles(id, username, avatar_url), post_tags(tag)')
+    .order('votes_count', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`getBoardPosts: ${error.message}`)

@@ -1,11 +1,14 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { createSupabaseAdmin } from '@/lib/supabase/admin'
 import { PostCard } from '@/components/shared/post-card'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { EmptyState } from '@/components/shared/empty-state'
+import { TelegramSettingsForm } from '@/features/notifications/components/telegram-settings-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { PostWithRelations } from '@/types'
 
@@ -24,7 +27,9 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     data: { user: currentUser },
   } = await supabase.auth.getUser()
 
-  // Fetch the profile
+  const isOwnProfile = currentUser?.id === id
+
+  // Typed profile query — omits telegram_chat_id to avoid type generation drift
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('id, username, avatar_url, created_at')
@@ -33,7 +38,21 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
 
   if (error || !profile) notFound()
 
-  const isOwnProfile = currentUser?.id === id
+  // Fetch telegram_chat_id separately for own profile.
+  // Admin client bypasses type constraint — column added in migration
+  // 20260227020000 but generated types not yet updated.
+  let telegramChatId: string | null = null
+  if (isOwnProfile) {
+    const admin = createSupabaseAdmin()
+    const { data: notifRow } = await admin
+      .from('profiles')
+      .select('telegram_chat_id')
+      .eq('id', id)
+      .single()
+    telegramChatId =
+      (notifRow as unknown as { telegram_chat_id: string | null } | null)
+        ?.telegram_chat_id ?? null
+  }
 
   // Fetch user's interests
   const { data: interests } = await supabase
@@ -126,6 +145,15 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             ))}
           </div>
         </div>
+      )}
+
+      {/* Notification settings — own profile only */}
+      {isOwnProfile && (
+        <>
+          <Separator />
+          <TelegramSettingsForm currentChatId={telegramChatId} />
+          <Separator />
+        </>
       )}
 
       {/* Tabs */}

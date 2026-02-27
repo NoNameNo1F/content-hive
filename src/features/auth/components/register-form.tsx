@@ -61,6 +61,17 @@ export function RegisterForm() {
         />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="inviteCode">Invite code</Label>
+        <Input
+          id="inviteCode"
+          name="inviteCode"
+          type="password"
+          placeholder="Ask your team for the code"
+          autoComplete="off"
+        />
+      </div>
+
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? 'Creating account…' : 'Create account'}
       </Button>

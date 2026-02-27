@@ -8,6 +8,16 @@ export async function signUp(
   _prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
+  // Invite-code gate — enforced only when INVITE_CODE env var is set.
+  // Rotate the code weekly by updating the env var in your deployment dashboard.
+  const expectedCode = process.env.INVITE_CODE
+  if (expectedCode) {
+    const inviteCode = (formData.get('inviteCode') as string)?.trim()
+    if (inviteCode !== expectedCode) {
+      return { success: false, error: 'Invalid invite code.' }
+    }
+  }
+
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const username = (formData.get('username') as string).trim().toLowerCase()

@@ -76,6 +76,9 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   <Link href="/board">Board</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/chat">Chat</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/create">New post</Link>
                 </DropdownMenuItem>
                 {isAdmin && (
@@ -129,6 +132,13 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   Board
+                </Link>
+                <Link
+                  href="/chat"
+                  className="text-sm font-medium hover:underline"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Chat
                 </Link>
                 <Link
                   href="/create"

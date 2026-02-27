@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { broadcastTelegram } from '@/lib/telegram'
 import { MAX_TAGS_PER_POST } from '@/lib/constants'
 import type { ActionResult, CreatePostInput } from '@/types'
 
@@ -51,6 +52,14 @@ export async function createPost(
   if (categoryId) {
     await supabase.from('post_categories').insert({ post_id: post.id, category_id: categoryId })
   }
+
+  // Notify team members on Telegram (fire-and-forget)
+  const username = (user.user_metadata?.username as string | undefined) ?? 'A team member'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  void broadcastTelegram(
+    user.id,
+    `📢 <b>${username}</b> added a new post: <a href="${appUrl}/post/${post.id}">${title}</a>`
+  )
 
   redirect(`/post/${post.id}`)
 }

@@ -76,6 +76,9 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   <Link href="/board">Board</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/graph">Content Map</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/chat">Chat</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -132,6 +135,13 @@ export function NavMenu({ user, isAdmin }: NavMenuProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   Board
+                </Link>
+                <Link
+                  href="/graph"
+                  className="text-sm font-medium hover:underline"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Content Map
                 </Link>
                 <Link
                   href="/chat"

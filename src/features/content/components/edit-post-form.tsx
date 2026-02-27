@@ -110,7 +110,7 @@ export function EditPostForm({
             value={url}
             onChange={setUrl}
             onOgFetch={postType === 'link' ? handleOgFetch : undefined}
-            placeholder={postType === 'video' ? 'YouTube, Vimeo, or TikTok URL' : 'https://'}
+            placeholder={postType === 'video' ? 'YouTube, Vimeo, TikTok, or Douyin URL' : 'https://'}
           />
           {postType === 'video' && url && (
             <div className="pt-2">

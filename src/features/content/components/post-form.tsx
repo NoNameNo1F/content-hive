@@ -92,7 +92,7 @@ export function PostForm({ categories }: PostFormProps) {
             value={url}
             onChange={setUrl}
             onOgFetch={type === 'link' ? handleOgFetch : undefined}
-            placeholder={type === 'video' ? 'YouTube, Vimeo, or TikTok URL' : 'https://'}
+            placeholder={type === 'video' ? 'YouTube, Vimeo, TikTok, or Douyin URL' : 'https://'}
           />
           {/* Video embed preview */}
           {type === 'video' && url && (

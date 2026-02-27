@@ -3,9 +3,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { getPostById } from '@/features/content/queries/get-post'
+import { getSimilarPosts } from '@/features/content/queries/get-similar-posts'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { DeletePostButton } from '@/features/content/components/delete-post-button'
 import { PostStatusUpdater } from '@/features/content/components/post-status-updater'
+import { SimilarPosts } from '@/features/content/components/similar-posts'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -50,9 +52,11 @@ export default async function PostPage({ params }: PostPageProps) {
     isBookmarked = !!data
   }
 
-  const author = post.profiles
-  const tags = post.post_tags.map((t) => t.tag)
+  const author  = post.profiles
+  const tags    = post.post_tags.map((t) => t.tag)
   const isOwner = user?.id === post.user_id
+
+  const similarPosts = await getSimilarPosts(post.id, tags)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -155,6 +159,13 @@ export default async function PostPage({ params }: PostPageProps) {
           {post.saves_count} save{post.saves_count !== 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* Similar content */}
+      {similarPosts.length > 0 && (
+        <div className="border-t pt-6">
+          <SimilarPosts posts={similarPosts} />
+        </div>
+      )}
     </div>
   )
 }

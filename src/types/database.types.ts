@@ -300,6 +300,17 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      get_feed_personalized: {
+        Args: {
+          p_user_id:    string
+          p_sort_by?:   string
+          p_status?:    string | null
+          p_category_id?: string | null
+          p_limit?:     number
+          p_offset?:    number
+        }
+        Returns: Database['public']['Tables']['posts']['Row'][]
+      }
     }
     Enums: {
       content_status: "available" | "in_use" | "used" | "rejected"

@@ -2,7 +2,15 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { createSupabaseAdmin } from '@/lib/supabase/admin'
 import { decrypt } from '@/lib/encryption'
 import { getAdapter } from '@/lib/llm'
+import { AGENT_TOOLS } from '@/lib/llm/tools'
+import { executeTool } from '@/lib/llm/execute-tool'
+import Anthropic from '@anthropic-ai/sdk'
 import type { LLMProvider, ChatMessage } from '@/lib/llm'
+
+const CLAUDE_SYSTEM =
+  'You are a ContentHive assistant. Use the available tools to look up real posts, ' +
+  'categories, and hashtags before answering questions about the content library. ' +
+  'Never fabricate post titles, IDs, or statistics.'
 
 export async function POST(req: Request) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -93,17 +101,71 @@ export async function POST(req: Request) {
   )
 
   // ── Stream response ───────────────────────────────────────────────────────
-  const adapter = getAdapter(provider)
   let fullResponse = ''
 
   const stream = new ReadableStream({
     async start(controller) {
       const enc = new TextEncoder()
+
       try {
-        for await (const chunk of adapter.stream(messages, apiKey)) {
-          fullResponse += chunk
-          controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`))
+        if (provider === 'claude') {
+          // ── Claude with tool calling ────────────────────────────────────
+          const client = new Anthropic({ apiKey })
+          type AntMsg = Anthropic.Messages.MessageParam
+          let history: AntMsg[] = messages.map((m) => ({ role: m.role, content: m.content }))
+
+          while (true) {
+            const response = await client.messages.create({
+              model: 'claude-sonnet-4-6',
+              max_tokens: 4096,
+              system: CLAUDE_SYSTEM,
+              tools: AGENT_TOOLS,
+              tool_choice: { type: 'auto' },
+              messages: history,
+            })
+
+            if (response.stop_reason === 'tool_use') {
+              const toolResults: Anthropic.Messages.ToolResultBlockParam[] = []
+              for (const block of response.content) {
+                if (block.type !== 'tool_use') continue
+                controller.enqueue(
+                  enc.encode(`data: ${JSON.stringify({ toolCall: { name: block.name } })}\n\n`)
+                )
+                const result = await executeTool(block.name, block.input as Record<string, unknown>)
+                toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result })
+              }
+              history = [
+                ...history,
+                { role: 'assistant', content: response.content },
+                { role: 'user', content: toolResults },
+              ]
+              continue
+            }
+
+            // Final text response — stream it
+            const textBlocks = response.content.filter(
+              (b) => b.type === 'text'
+            ) as Anthropic.Messages.TextBlock[]
+            const text = textBlocks.map((b) => b.text).join('')
+
+            // Yield in chunks to simulate streaming
+            const CHUNK = 20
+            for (let i = 0; i < text.length; i += CHUNK) {
+              const chunk = text.slice(i, i + CHUNK)
+              fullResponse += chunk
+              controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`))
+            }
+            break
+          }
+        } else {
+          // ── Other providers — simple streaming ──────────────────────────
+          const adapter = getAdapter(provider)
+          for await (const chunk of adapter.stream(messages, apiKey)) {
+            fullResponse += chunk
+            controller.enqueue(enc.encode(`data: ${JSON.stringify({ chunk })}\n\n`))
+          }
         }
+
         controller.enqueue(enc.encode('data: [DONE]\n\n'))
         controller.close()
       } catch (err) {

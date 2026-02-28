@@ -4,8 +4,17 @@ import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { PostCard } from '@/components/shared/post-card'
 import { Button } from '@/components/ui/button'
+import { LayoutGrid, GalleryVertical } from 'lucide-react'
+import { VerticalFeed } from '@/features/feed/components/vertical-feed'
 import type { Category, ContentStatus, PostWithRelations } from '@/types'
 import type { FeedSortBy } from '@/features/feed/queries/get-feed-posts'
+
+type FeedLayout = 'grid' | 'scroll'
+
+function getInitialLayout(): FeedLayout {
+  if (typeof window === 'undefined') return 'grid'
+  return (localStorage.getItem('feed-layout') as FeedLayout) ?? 'grid'
+}
 
 const STATUS_OPTIONS: { value: ContentStatus; label: string; className: string }[] = [
   { value: 'available',   label: 'Available',   className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
@@ -67,6 +76,15 @@ export function FeedList({
   const [bookmarked]          = useState(new Set(bookmarkedIds))
   const [userVotes]           = useState<Record<string, 1 | -1>>(initialUserVotes)
   const [isPending, startTransition] = useTransition()
+  const [layout, setLayout]   = useState<FeedLayout>(getInitialLayout)
+
+  function toggleLayout() {
+    setLayout((prev) => {
+      const next: FeedLayout = prev === 'grid' ? 'scroll' : 'grid'
+      localStorage.setItem('feed-layout', next)
+      return next
+    })
+  }
 
   function pushParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -126,6 +144,17 @@ export function FeedList({
     <div className="space-y-6">
       {/* Sort + status filter row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* Layout toggle */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={toggleLayout}
+          title={layout === 'grid' ? 'Switch to scroll feed' : 'Switch to grid'}
+          className="h-8 w-8"
+        >
+          {layout === 'grid' ? <GalleryVertical size={16} /> : <LayoutGrid size={16} />}
+        </Button>
         {/* Sort tabs */}
         <div className="flex items-center gap-1 rounded-lg border p-1">
           {SORT_OPTIONS.map(({ value, label, title }) => (
@@ -184,30 +213,44 @@ export function FeedList({
         </div>
       )}
 
-      {/* Post grid */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            isBookmarked={bookmarked.has(post.id)}
-            currentUserId={currentUserId}
-            userVote={userVotes[post.id] ?? null}
-          />
-        ))}
-      </div>
+      {layout === 'scroll' ? (
+        <VerticalFeed
+          posts={posts}
+          bookmarkedIds={bookmarkedIds}
+          userVotes={userVotes}
+          currentUserId={currentUserId}
+          hasMore={hasMore}
+          onLoadMore={handleLoadMore}
+          isLoadingMore={isPending}
+        />
+      ) : (
+        <>
+          {/* Post grid */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                isBookmarked={bookmarked.has(post.id)}
+                currentUserId={currentUserId}
+                userVote={userVotes[post.id] ?? null}
+              />
+            ))}
+          </div>
 
-      {/* Load more */}
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={handleLoadMore}
-            disabled={isPending}
-          >
-            {isPending ? 'Loading…' : 'Load more'}
-          </Button>
-        </div>
+          {/* Load more */}
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isPending}
+              >
+                {isPending ? 'Loading…' : 'Load more'}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

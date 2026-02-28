@@ -29,6 +29,7 @@ export function ChatWindow({
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
+  const [toolCallLabel, setToolCallLabel] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -47,6 +48,7 @@ export function ChatWindow({
     setError(null)
     setIsStreaming(true)
     setStreamingContent('')
+    setToolCallLabel(null)
 
     // Optimistically add user message to UI
     const tempId = `temp-${Date.now()}`
@@ -80,7 +82,12 @@ export function ChatWindow({
           try {
             const parsed = JSON.parse(data)
             if (parsed.error) throw new Error(parsed.error)
+            if (parsed.toolCall) {
+              const label = `Searching ${parsed.toolCall.name.replace(/_/g, ' ')}…`
+              setToolCallLabel(label)
+            }
             if (parsed.chunk) {
+              setToolCallLabel(null)
               accumulated += parsed.chunk
               setStreamingContent(accumulated)
             }
@@ -156,6 +163,15 @@ export function ChatWindow({
           </div>
         ))}
 
+        {/* Tool call indicator */}
+        {isStreaming && toolCallLabel && !streamingContent && (
+          <div className="flex justify-start">
+            <div className="rounded-full bg-muted px-3 py-1.5 text-xs italic text-muted-foreground">
+              🔍 {toolCallLabel}
+            </div>
+          </div>
+        )}
+
         {/* Streaming assistant message */}
         {isStreaming && (
           <div className="flex justify-start">
@@ -163,11 +179,13 @@ export function ChatWindow({
               {streamingContent ? (
                 <pre className="whitespace-pre-wrap font-sans">{streamingContent}</pre>
               ) : (
-                <span className="inline-flex gap-1">
-                  <span className="animate-bounce [animation-delay:0ms]">·</span>
-                  <span className="animate-bounce [animation-delay:150ms]">·</span>
-                  <span className="animate-bounce [animation-delay:300ms]">·</span>
-                </span>
+                !toolCallLabel && (
+                  <span className="inline-flex gap-1">
+                    <span className="animate-bounce [animation-delay:0ms]">·</span>
+                    <span className="animate-bounce [animation-delay:150ms]">·</span>
+                    <span className="animate-bounce [animation-delay:300ms]">·</span>
+                  </span>
+                )
               )}
             </div>
           </div>

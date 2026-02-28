@@ -68,6 +68,7 @@ export function PostForm({ categories }: PostFormProps) {
         setTags(data.hashtags.slice(0, MAX_HASHTAGS))
       }
       if (data.isCarousel) setIsCarousel(true)
+      if (data.canonicalUrl) setUrl(data.canonicalUrl)
     } catch {
       // silent fail
     }

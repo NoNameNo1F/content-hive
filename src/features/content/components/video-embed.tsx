@@ -1,11 +1,15 @@
 interface VideoEmbedProps {
   url: string
+  autoplay?: boolean
 }
 
-function getEmbedInfo(url: string): { src: string; isPortrait?: boolean } | null {
+function getEmbedInfo(url: string, autoplay?: boolean): { src: string; isPortrait?: boolean } | null {
   // YouTube: watch?v=ID or youtu.be/ID
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  if (ytMatch) return { src: `https://www.youtube.com/embed/${ytMatch[1]}` }
+  if (ytMatch) {
+    const params = autoplay ? '?autoplay=1&mute=1' : ''
+    return { src: `https://www.youtube.com/embed/${ytMatch[1]}${params}` }
+  }
 
   // Vimeo: vimeo.com/ID
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
@@ -22,14 +26,17 @@ function getEmbedInfo(url: string): { src: string; isPortrait?: boolean } | null
 
   // TikTok: tiktok.com/@user/video/ID
   const tiktokMatch = url.match(/tiktok\.com\/.*\/video\/(\d+)/)
-  if (tiktokMatch) return { src: `https://www.tiktok.com/embed/v2/${tiktokMatch[1]}`, isPortrait: true }
+  if (tiktokMatch) {
+    const params = autoplay ? '?autoplay=1' : ''
+    return { src: `https://www.tiktok.com/embed/v2/${tiktokMatch[1]}${params}`, isPortrait: true }
+  }
 
   return null
 }
 
 /** Renders an iframe embed for YouTube, Vimeo, TikTok, and Douyin URLs. Returns null for unsupported URLs. */
-export function VideoEmbed({ url }: VideoEmbedProps) {
-  const embedInfo = getEmbedInfo(url)
+export function VideoEmbed({ url, autoplay }: VideoEmbedProps) {
+  const embedInfo = getEmbedInfo(url, autoplay)
 
   if (!embedInfo) {
     return (

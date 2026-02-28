@@ -12,19 +12,19 @@ export default async function GraphPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const categories = await getGraphData()
+  const graphData = await getGraphData()
 
   return (
     <div className="flex flex-col gap-4" style={{ height: 'calc(100vh - 8rem)' }}>
       <div className="space-y-0.5 shrink-0">
         <h1 className="text-2xl font-bold tracking-tight">Content Map</h1>
         <p className="text-sm text-muted-foreground">
-          Browse your content library by framework — hover video nodes to preview instantly.
+          Explore your content network — posts, categories, and hashtags as connected nodes.
         </p>
       </div>
 
       <div className="flex-1 rounded-xl border overflow-hidden">
-        <ContentGraph categories={categories} />
+        <ContentGraph categories={graphData.categories} hashtags={graphData.hashtags} />
       </div>
     </div>
   )

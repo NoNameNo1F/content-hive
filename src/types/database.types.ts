@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       bookmarks: {
@@ -95,6 +70,73 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          provider: Database["public"]["Enums"]["llm_provider"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider: Database["public"]["Enums"]["llm_provider"]
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider?: Database["public"]["Enums"]["llm_provider"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_categories: {
         Row: {
@@ -191,7 +233,9 @@ export type Database = {
           creator_handle: string | null
           description: string | null
           fts: unknown
+          has_shopping_cart: boolean
           id: string
+          is_carousel: boolean
           saves_count: number
           status: Database["public"]["Enums"]["content_status"]
           thumbnail: string | null
@@ -208,7 +252,9 @@ export type Database = {
           creator_handle?: string | null
           description?: string | null
           fts?: unknown
+          has_shopping_cart?: boolean
           id?: string
+          is_carousel?: boolean
           saves_count?: number
           status?: Database["public"]["Enums"]["content_status"]
           thumbnail?: string | null
@@ -225,7 +271,9 @@ export type Database = {
           creator_handle?: string | null
           description?: string | null
           fts?: unknown
+          has_shopping_cart?: boolean
           id?: string
+          is_carousel?: boolean
           saves_count?: number
           status?: Database["public"]["Enums"]["content_status"]
           thumbnail?: string | null
@@ -253,6 +301,7 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          telegram_chat_id: string | null
           username: string
         }
         Insert: {
@@ -260,6 +309,7 @@ export type Database = {
           created_at?: string
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          telegram_chat_id?: string | null
           username: string
         }
         Update: {
@@ -267,9 +317,45 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          telegram_chat_id?: string | null
           username?: string
         }
         Relationships: []
+      }
+      user_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          provider: Database["public"]["Enums"]["llm_provider"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          provider: Database["public"]["Enums"]["llm_provider"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          provider?: Database["public"]["Enums"]["llm_provider"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_api_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_interests: {
         Row: {
@@ -299,21 +385,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_admin: { Args: never; Returns: boolean }
       get_feed_personalized: {
         Args: {
-          p_user_id:    string
-          p_sort_by?:   string
-          p_status?:    string | null
-          p_category_id?: string | null
-          p_limit?:     number
-          p_offset?:    number
+          p_category_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_sort_by?: string
+          p_status?: string
+          p_user_id: string
         }
-        Returns: Database['public']['Tables']['posts']['Row'][]
+        Returns: {
+          created_at: string
+          creator_handle: string | null
+          description: string | null
+          fts: unknown
+          has_shopping_cart: boolean
+          id: string
+          is_carousel: boolean
+          saves_count: number
+          status: Database["public"]["Enums"]["content_status"]
+          thumbnail: string | null
+          title: string
+          type: Database["public"]["Enums"]["post_type"]
+          updated_at: string
+          url: string | null
+          user_id: string
+          visibility: Database["public"]["Enums"]["post_visibility"]
+          votes_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      content_status: "available" | "in_use" | "used" | "rejected"
+      content_status: "available" | "unavailable"
+      llm_provider: "claude" | "gpt" | "gemini" | "grok" | "deepseek" | "qwen"
       post_type: "video" | "link" | "text"
       post_visibility: "public" | "team"
       user_role: "visitor" | "member" | "admin"
@@ -442,12 +553,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
-      content_status: ["available", "in_use", "used", "rejected"],
+      content_status: ["available", "unavailable"],
+      llm_provider: ["claude", "gpt", "gemini", "grok", "deepseek", "qwen"],
       post_type: ["video", "link", "text"],
       post_visibility: ["public", "team"],
       user_role: ["visitor", "member", "admin"],

@@ -5,21 +5,8 @@ import { useTransition } from 'react'
 import { updatePostStatus } from '@/features/content/actions/update-post-status'
 import { VoteButtons } from '@/features/content/components/vote-buttons'
 import { Badge } from '@/components/ui/badge'
-import type { ContentStatus, PostWithRelations } from '@/types'
-
-const STATUS_SEQUENCE: ContentStatus[] = ['available', 'in_use', 'used', 'rejected']
-
-const NEXT_LABEL: Partial<Record<ContentStatus, string>> = {
-  available: 'Mark in use →',
-  in_use:    'Mark used →',
-  used:      'Mark rejected →',
-}
-
-const PREV_LABEL: Partial<Record<ContentStatus, string>> = {
-  in_use:   '← Back to available',
-  used:     '← Back to in use',
-  rejected: '← Back to used',
-}
+import { cn } from '@/lib/utils'
+import type { PostWithRelations } from '@/types'
 
 interface BoardCardProps {
   post: PostWithRelations
@@ -30,16 +17,20 @@ interface BoardCardProps {
 export function BoardCard({ post, currentUserId, userVote = null }: BoardCardProps) {
   const [isPending, startTransition] = useTransition()
   const isOwner = currentUserId === post.user_id
-  const idx = STATUS_SEQUENCE.indexOf(post.status as ContentStatus)
+  const isUnavailable = post.status === 'unavailable'
 
-  function moveTo(status: ContentStatus) {
+  function toggle() {
     startTransition(() => {
-      updatePostStatus(post.id, status)
+      updatePostStatus(post.id, isUnavailable ? 'available' : 'unavailable')
     })
   }
 
   return (
-    <div className={`rounded-lg border bg-card p-3 space-y-2 text-sm transition-opacity ${isPending ? 'opacity-50' : ''}`}>
+    <div className={cn(
+      'rounded-lg border bg-card p-3 space-y-2 text-sm transition-opacity',
+      isPending && 'opacity-50',
+      isUnavailable && 'opacity-60 hover:opacity-90 transition-opacity'
+    )}>
       {/* Title */}
       <Link href={`/post/${post.id}`} className="font-medium leading-snug hover:underline line-clamp-2">
         {post.title}
@@ -61,29 +52,22 @@ export function BoardCard({ post, currentUserId, userVote = null }: BoardCardPro
         />
       </div>
 
-      {/* Move buttons — only for owner */}
+      {/* Toggle button — only for owner */}
       {isOwner && (
-        <div className="flex flex-wrap gap-1 pt-1">
-          {idx > 0 && PREV_LABEL[post.status as ContentStatus] && (
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => moveTo(STATUS_SEQUENCE[idx - 1])}
-              className="rounded px-2 py-0.5 text-xs bg-muted hover:bg-muted/80 transition-colors"
-            >
-              {PREV_LABEL[post.status as ContentStatus]}
-            </button>
-          )}
-          {idx < STATUS_SEQUENCE.length - 1 && NEXT_LABEL[post.status as ContentStatus] && (
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => moveTo(STATUS_SEQUENCE[idx + 1])}
-              className="rounded px-2 py-0.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              {NEXT_LABEL[post.status as ContentStatus]}
-            </button>
-          )}
+        <div className="pt-1">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={toggle}
+            className={cn(
+              'rounded px-2 py-0.5 text-xs transition-colors',
+              isUnavailable
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'bg-muted hover:bg-muted/80'
+            )}
+          >
+            {isUnavailable ? 'Restore' : 'Mark unavailable'}
+          </button>
         </div>
       )}
     </div>

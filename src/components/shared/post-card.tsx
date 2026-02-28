@@ -3,24 +3,22 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { ShoppingCart, Layers } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { VoteButtons } from '@/features/content/components/vote-buttons'
+import { cn } from '@/lib/utils'
 import type { ContentStatus, PostWithRelations } from '@/types'
 
 const STATUS_STYLES: Record<ContentStatus, string> = {
-  available: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  in_use:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  used:      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  rejected:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  available:   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  unavailable: 'bg-muted text-muted-foreground',
 }
 
 const STATUS_LABELS: Record<ContentStatus, string> = {
-  available: 'Available',
-  in_use:    'In use',
-  used:      'Used',
-  rejected:  'Rejected',
+  available:   'Available',
+  unavailable: 'Unavailable',
 }
 
 function StatusBadge({ status }: { status: ContentStatus }) {
@@ -44,11 +42,35 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
   const author = post.profiles
   const tags = post.post_tags.map((t) => t.tag)
   const isVideo = post.type === 'video' && !!post.url
+  const isUnavailable = post.status === 'unavailable'
+  // Cast to access new columns (types regenerated but PostWithRelations uses PostRow spread)
+  const hasShoppingCart = (post as { has_shopping_cart?: boolean }).has_shopping_cart ?? false
+  const isCarousel = (post as { is_carousel?: boolean }).is_carousel ?? false
 
   return (
-    <article className="group rounded-lg border bg-card text-card-foreground transition-shadow hover:shadow-md">
-      {/* Video preview — inline playable for video posts */}
-      {isVideo && (
+    <article className={cn(
+      'group relative rounded-lg border bg-card text-card-foreground transition-shadow hover:shadow-md',
+      isUnavailable && 'opacity-50 grayscale-30'
+    )}>
+      {/* Top-right overlay badges */}
+      {(isUnavailable || hasShoppingCart) && (
+        <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
+          {isUnavailable && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground shadow-sm">
+              Unavailable
+            </span>
+          )}
+          {hasShoppingCart && (
+            <span className="flex items-center gap-1 rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 shadow-sm">
+              <ShoppingCart size={10} />
+              Shop
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Video preview — inline playable; carousel gets static treatment */}
+      {isVideo && !isCarousel && (
         showVideo ? (
           <div className="relative rounded-t-lg overflow-hidden">
             <VideoEmbed url={post.url!} />
@@ -81,20 +103,53 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
             ) : (
               <div className="flex aspect-video items-center justify-center bg-black/10" />
             )}
-            {/* Play overlay */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover/play:bg-black/40">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover/play:scale-110">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-6 w-6 translate-x-0.5 text-black"
-                >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 translate-x-0.5 text-black">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </div>
             </div>
           </button>
         )
+      )}
+
+      {/* Carousel: static thumbnail with overlay icon + CTA */}
+      {isVideo && isCarousel && (
+        <div className="relative rounded-t-lg overflow-hidden bg-muted">
+          {post.thumbnail ? (
+            <div className="relative aspect-video w-full">
+              <Image
+                src={post.thumbnail}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+          ) : (
+            <div className="flex aspect-video items-center justify-center bg-black/10" />
+          )}
+          {/* Carousel icon bottom-right */}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-1.5 py-0.5">
+            <Layers size={12} className="text-white" />
+            <span className="text-xs text-white">Carousel</span>
+          </div>
+          {/* View carousel CTA */}
+          {post.url && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-black shadow-lg hover:bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                View carousel →
+              </a>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Static thumbnail for non-video posts */}
@@ -130,7 +185,6 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
             </Link>
           </div>
 
-          {/* Bookmark button — only shown when user is authenticated */}
           {currentUserId && (
             <div className="shrink-0">
               <BookmarkButton postId={post.id} initialBookmarked={isBookmarked} />
@@ -143,13 +197,13 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
           <p className="line-clamp-2 text-sm text-muted-foreground">{post.description}</p>
         )}
 
-        {/* Tags */}
+        {/* Hashtags */}
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.slice(0, 5).map((tag) => (
               <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
                 <Badge variant="outline" className="text-xs hover:bg-accent">
-                  {tag}
+                  #{tag}
                 </Badge>
               </Link>
             ))}
@@ -166,7 +220,7 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
           </p>
         )}
 
-        {/* Footer: votes + author + status + saves */}
+        {/* Footer */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             {currentUserId && (

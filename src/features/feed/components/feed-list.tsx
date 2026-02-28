@@ -8,10 +8,8 @@ import type { Category, ContentStatus, PostWithRelations } from '@/types'
 import type { FeedSortBy } from '@/features/feed/queries/get-feed-posts'
 
 const STATUS_OPTIONS: { value: ContentStatus; label: string; className: string }[] = [
-  { value: 'available', label: 'Available', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  { value: 'in_use',    label: 'In use',    className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-  { value: 'used',      label: 'Used',      className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  { value: 'rejected',  label: 'Rejected',  className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+  { value: 'available',   label: 'Available',   className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+  { value: 'unavailable', label: 'Unavailable', className: 'bg-muted text-muted-foreground' },
 ]
 
 const SORT_OPTIONS: { value: FeedSortBy; label: string; title: string }[] = [

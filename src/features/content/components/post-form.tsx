@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -18,7 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ActionResult, Category, ContentStatus, PostType } from '@/types'
+import { MAX_HASHTAGS } from '@/lib/constants'
+import type { ActionResult, Category } from '@/types'
+
+type Platform = 'youtube' | 'tiktok' | 'others'
 
 interface PostFormProps {
   categories: Category[]
@@ -30,16 +34,20 @@ export function PostForm({ categories }: PostFormProps) {
     null
   )
 
-  const [type, setType] = useState<PostType>('link')
+  const [platform, setPlatform] = useState<Platform>('youtube')
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [thumbnail, setThumbnail] = useState('')
   const [tags, setTags] = useState<string[]>([])
-  const [visibility, setVisibility] = useState<'public' | 'team'>('public')
   const [categoryId, setCategoryId] = useState<string>('')
-  const [status, setStatus] = useState<ContentStatus>('available')
   const [creatorHandle, setCreatorHandle] = useState('')
+  const [hasShoppingCart, setHasShoppingCart] = useState(false)
+  const [isCarousel, setIsCarousel] = useState(false)
+  const [hashtagError, setHashtagError] = useState(false)
+
+  // type stored in DB: video for youtube/tiktok, link for others
+  const postType = platform === 'others' ? 'link' : 'video'
 
   function handleOgFetch(og: { title?: string | null; description?: string | null; image?: string | null }) {
     if (og.title && !title) setTitle(og.title)
@@ -47,19 +55,61 @@ export function PostForm({ categories }: PostFormProps) {
     if (og.image && !thumbnail) setThumbnail(og.image)
   }
 
+  async function handleTikTokOembed(newUrl: string) {
+    if (!newUrl) return
+    try {
+      const res = await fetch(`/api/oembed?url=${encodeURIComponent(newUrl)}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.title && !title) setTitle(data.title)
+      if (data.authorName && !creatorHandle) setCreatorHandle(data.authorName)
+      if (data.thumbnailUrl && !thumbnail) setThumbnail(data.thumbnailUrl)
+      if (data.hashtags?.length && tags.length === 0) {
+        setTags(data.hashtags.slice(0, MAX_HASHTAGS))
+      }
+      if (data.isCarousel) setIsCarousel(true)
+    } catch {
+      // silent fail
+    }
+  }
+
+  function handleUrlChange(newUrl: string) {
+    setUrl(newUrl)
+    if (platform === 'tiktok' && newUrl) {
+      handleTikTokOembed(newUrl)
+    }
+  }
+
+  function handlePlatformChange(p: Platform) {
+    setPlatform(p)
+    setUrl('')
+    setTitle('')
+    setDescription('')
+    setThumbnail('')
+    setTags([])
+    setCreatorHandle('')
+    setHasShoppingCart(false)
+    setIsCarousel(false)
+    setHashtagError(false)
+  }
+
   return (
     <form
       action={(formData) => {
-        // Inject controlled state values into the FormData
-        formData.set('type', type)
+        if (tags.length === 0) {
+          setHashtagError(true)
+          return
+        }
+        setHashtagError(false)
+        formData.set('type', postType)
         formData.set('title', title)
         formData.set('description', description)
         formData.set('url', url)
         formData.set('thumbnail', thumbnail)
-        formData.set('visibility', visibility)
         formData.set('categoryId', categoryId)
-        formData.set('status', status)
         formData.set('creatorHandle', creatorHandle)
+        formData.set('hasShoppingCart', hasShoppingCart ? 'true' : 'false')
+        formData.set('isCarousel', isCarousel ? 'true' : 'false')
         // tags are injected by the hidden inputs inside TagInput
         action(formData)
       }}
@@ -71,35 +121,51 @@ export function PostForm({ categories }: PostFormProps) {
         </Alert>
       )}
 
-      {/* Post type */}
+      {/* Platform tabs */}
       <div className="space-y-2">
-        <Label>Post type</Label>
-        <Tabs value={type} onValueChange={(v) => { setType(v as PostType); setUrl('') }}>
+        <Label>Platform</Label>
+        <Tabs value={platform} onValueChange={(v) => handlePlatformChange(v as Platform)}>
           <TabsList className="w-full">
-            <TabsTrigger value="link" className="flex-1">Link</TabsTrigger>
-            <TabsTrigger value="video" className="flex-1">Video</TabsTrigger>
-            <TabsTrigger value="text" className="flex-1">Text</TabsTrigger>
+            <TabsTrigger value="youtube" className="flex-1">YouTube</TabsTrigger>
+            <TabsTrigger value="tiktok" className="flex-1">TikTok</TabsTrigger>
+            <TabsTrigger value="others" className="flex-1">Others</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* URL — shown for link and video */}
-      {(type === 'link' || type === 'video') && (
-        <div className="space-y-2">
-          <Label htmlFor="url">URL</Label>
-          <UrlInput
-            name="url"
-            value={url}
-            onChange={setUrl}
-            onOgFetch={type === 'link' ? handleOgFetch : undefined}
-            placeholder={type === 'video' ? 'YouTube, Vimeo, TikTok, or Douyin URL' : 'https://'}
+      {/* URL */}
+      <div className="space-y-2">
+        <Label htmlFor="url">URL</Label>
+        <UrlInput
+          name="url"
+          value={url}
+          onChange={handleUrlChange}
+          onOgFetch={platform === 'others' ? handleOgFetch : undefined}
+          placeholder={
+            platform === 'youtube' ? 'YouTube URL'
+            : platform === 'tiktok' ? 'TikTok URL'
+            : 'https://'
+          }
+        />
+        {/* Video preview for YouTube/TikTok */}
+        {platform !== 'others' && url && (
+          <div className="pt-2">
+            <VideoEmbed url={url} />
+          </div>
+        )}
+      </div>
+
+      {/* TikTok: has shopping cart */}
+      {platform === 'tiktok' && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="hasShoppingCart"
+            checked={hasShoppingCart}
+            onCheckedChange={(v) => setHasShoppingCart(v === true)}
           />
-          {/* Video embed preview */}
-          {type === 'video' && url && (
-            <div className="pt-2">
-              <VideoEmbed url={url} />
-            </div>
-          )}
+          <Label htmlFor="hasShoppingCart" className="font-normal cursor-pointer">
+            Has shopping cart
+          </Label>
         </div>
       )}
 
@@ -116,24 +182,47 @@ export function PostForm({ categories }: PostFormProps) {
         />
       </div>
 
-      {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          name="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add some context…"
-          rows={3}
-        />
-      </div>
+      {/* Description — YouTube/TikTok only */}
+      {platform !== 'others' && (
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add some context…"
+            rows={3}
+          />
+        </div>
+      )}
 
-      {/* Tags */}
+      {/* Creator handle — YouTube/TikTok only */}
+      {platform !== 'others' && (
+        <div className="space-y-2">
+          <Label htmlFor="creatorHandle">Creator handle</Label>
+          <Input
+            id="creatorHandle"
+            name="creatorHandle"
+            value={creatorHandle}
+            onChange={(e) => setCreatorHandle(e.target.value)}
+            placeholder="@username"
+          />
+        </div>
+      )}
+
+      {/* Hashtags */}
       <div className="space-y-2">
-        <Label>Tags</Label>
-        <TagInput tags={tags} onChange={setTags} />
-        <p className="text-xs text-muted-foreground">Up to 10 tags. Press Enter or comma to add.</p>
+        <div className="flex items-center justify-between">
+          <Label>Hashtags</Label>
+          <span className="text-xs text-muted-foreground">{tags.length} / {MAX_HASHTAGS}</span>
+        </div>
+        <TagInput
+          tags={tags}
+          onChange={(t) => { setTags(t); if (t.length > 0) setHashtagError(false) }}
+          max={MAX_HASHTAGS}
+          hasError={hashtagError}
+        />
       </div>
 
       {/* Category */}
@@ -156,50 +245,19 @@ export function PostForm({ categories }: PostFormProps) {
         </div>
       )}
 
-      {/* Creator handle — for TikTok/social attribution */}
-      <div className="space-y-2">
-        <Label htmlFor="creatorHandle">Creator handle</Label>
-        <Input
-          id="creatorHandle"
-          name="creatorHandle"
-          value={creatorHandle}
-          onChange={(e) => setCreatorHandle(e.target.value)}
-          placeholder="@username"
-        />
-        <p className="text-xs text-muted-foreground">TikTok or social media creator handle (optional).</p>
-      </div>
-
-      {/* Content status */}
-      <div className="space-y-2">
-        <Label>Content status</Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as ContentStatus)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="available">Available — ready to use</SelectItem>
-            <SelectItem value="in_use">In use — currently being used</SelectItem>
-            <SelectItem value="used">Used — already posted</SelectItem>
-            <SelectItem value="rejected">Rejected — not suitable</SelectItem>
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="status" value={status} />
-      </div>
-
-      {/* Visibility */}
-      <div className="space-y-2">
-        <Label>Visibility</Label>
-        <Select value={visibility} onValueChange={(v) => setVisibility(v as 'public' | 'team')}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="public">Public — visible to everyone</SelectItem>
-            <SelectItem value="team">Team — visible to members only</SelectItem>
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="visibility" value={visibility} />
-      </div>
+      {/* Is carousel — YouTube/TikTok only */}
+      {platform !== 'others' && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="isCarousel"
+            checked={isCarousel}
+            onCheckedChange={(v) => setIsCarousel(v === true)}
+          />
+          <Label htmlFor="isCarousel" className="font-normal cursor-pointer">
+            This is a carousel (slideshow)
+          </Label>
+        </div>
+      )}
 
       <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? 'Publishing…' : 'Publish post'}

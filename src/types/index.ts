@@ -53,11 +53,11 @@ export interface CreatePostInput {
   description?: string
   url?: string
   thumbnail?: string
-  visibility: PostVisibility
-  status: ContentStatus
   creator_handle?: string
   tags: string[]
   categoryId?: string
+  hasShoppingCart?: boolean
+  isCarousel?: boolean
 }
 
 // ─── Server Action result type ────────────────────────────────────────────────

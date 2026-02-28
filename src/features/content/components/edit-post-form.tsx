@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { MAX_HASHTAGS } from '@/lib/constants'
 import type { ActionResult, Category, ContentStatus, PostType } from '@/types'
 
 interface EditPostFormProps {
@@ -31,6 +34,8 @@ interface EditPostFormProps {
   initialCategoryId: string
   initialStatus: ContentStatus
   initialCreatorHandle: string
+  initialHasShoppingCart?: boolean
+  initialIsCarousel?: boolean
   postType: PostType
   categories: Category[]
 }
@@ -46,6 +51,8 @@ export function EditPostForm({
   initialCategoryId,
   initialStatus,
   initialCreatorHandle,
+  initialHasShoppingCart = false,
+  initialIsCarousel = false,
   postType,
   categories,
 }: EditPostFormProps) {
@@ -60,10 +67,12 @@ export function EditPostForm({
   const [url, setUrl] = useState(initialUrl)
   const [thumbnail, setThumbnail] = useState(initialThumbnail)
   const [tags, setTags] = useState<string[]>(initialTags)
-  const [visibility, setVisibility] = useState<'public' | 'team'>(initialVisibility)
+  const [visibility] = useState<'public' | 'team'>(initialVisibility)
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [status, setStatus] = useState<ContentStatus>(initialStatus)
   const [creatorHandle, setCreatorHandle] = useState(initialCreatorHandle)
+  const [hasShoppingCart, setHasShoppingCart] = useState(initialHasShoppingCart)
+  const [isCarousel, setIsCarousel] = useState(initialIsCarousel)
 
   function handleOgFetch(og: { title?: string | null; description?: string | null; image?: string | null }) {
     if (og.title && !title) setTitle(og.title)
@@ -82,6 +91,8 @@ export function EditPostForm({
         formData.set('categoryId', categoryId)
         formData.set('status', status)
         formData.set('creatorHandle', creatorHandle)
+        formData.set('hasShoppingCart', hasShoppingCart ? 'true' : 'false')
+        formData.set('isCarousel', isCarousel ? 'true' : 'false')
         action(formData)
       }}
       className="space-y-6"
@@ -92,7 +103,7 @@ export function EditPostForm({
         </Alert>
       )}
 
-      {/* Post type — read-only, cannot change after creation */}
+      {/* Post type - read-only */}
       <div className="space-y-2">
         <Label>Post type</Label>
         <div>
@@ -101,7 +112,7 @@ export function EditPostForm({
         </div>
       </div>
 
-      {/* URL — shown for link and video */}
+      {/* URL */}
       {(postType === 'link' || postType === 'video') && (
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
@@ -110,7 +121,7 @@ export function EditPostForm({
             value={url}
             onChange={setUrl}
             onOgFetch={postType === 'link' ? handleOgFetch : undefined}
-            placeholder={postType === 'video' ? 'YouTube, Vimeo, TikTok, or Douyin URL' : 'https://'}
+            placeholder={postType === 'video' ? 'YouTube, TikTok, or Douyin URL' : 'https://'}
           />
           {postType === 'video' && url && (
             <div className="pt-2">
@@ -141,16 +152,18 @@ export function EditPostForm({
           name="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add some context…"
+          placeholder="Add some context..."
           rows={3}
         />
       </div>
 
-      {/* Tags */}
+      {/* Hashtags */}
       <div className="space-y-2">
-        <Label>Tags</Label>
-        <TagInput tags={tags} onChange={setTags} />
-        <p className="text-xs text-muted-foreground">Up to 10 tags. Press Enter or comma to add.</p>
+        <div className="flex items-center justify-between">
+          <Label>Hashtags</Label>
+          <span className="text-xs text-muted-foreground">{tags.length} / {MAX_HASHTAGS}</span>
+        </div>
+        <TagInput tags={tags} onChange={setTags} max={MAX_HASHTAGS} />
       </div>
 
       {/* Category */}
@@ -184,44 +197,53 @@ export function EditPostForm({
           onChange={(e) => setCreatorHandle(e.target.value)}
           placeholder="@username"
         />
-        <p className="text-xs text-muted-foreground">TikTok or social media creator handle (optional).</p>
       </div>
 
-      {/* Content status */}
-      <div className="space-y-2">
-        <Label>Content status</Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as ContentStatus)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="available">Available — ready to use</SelectItem>
-            <SelectItem value="in_use">In use — currently being used</SelectItem>
-            <SelectItem value="used">Used — already posted</SelectItem>
-            <SelectItem value="rejected">Rejected — not suitable</SelectItem>
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="status" value={status} />
+      {/* Availability toggle */}
+      <div className="flex items-center justify-between rounded-lg border p-4">
+        <div className="space-y-0.5">
+          <Label>Availability</Label>
+          <p className="text-xs text-muted-foreground">
+            {status === 'available' ? 'Available for use' : 'Marked as unavailable'}
+          </p>
+        </div>
+        <Switch
+          checked={status === 'available'}
+          onCheckedChange={(checked) => setStatus(checked ? 'available' : 'unavailable')}
+        />
       </div>
 
-      {/* Visibility */}
-      <div className="space-y-2">
-        <Label>Visibility</Label>
-        <Select value={visibility} onValueChange={(v) => setVisibility(v as 'public' | 'team')}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="public">Public — visible to everyone</SelectItem>
-            <SelectItem value="team">Team — visible to members only</SelectItem>
-          </SelectContent>
-        </Select>
-        <input type="hidden" name="visibility" value={visibility} />
-      </div>
+      {/* Shopping cart (video only) */}
+      {postType === 'video' && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="hasShoppingCart"
+            checked={hasShoppingCart}
+            onCheckedChange={(v) => setHasShoppingCart(v === true)}
+          />
+          <Label htmlFor="hasShoppingCart" className="font-normal cursor-pointer">
+            Has shopping cart
+          </Label>
+        </div>
+      )}
+
+      {/* Is carousel (video only) */}
+      {postType === 'video' && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="isCarousel"
+            checked={isCarousel}
+            onCheckedChange={(v) => setIsCarousel(v === true)}
+          />
+          <Label htmlFor="isCarousel" className="font-normal cursor-pointer">
+            This is a carousel (slideshow)
+          </Label>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={isPending} className="flex-1">
-          {isPending ? 'Saving…' : 'Save changes'}
+          {isPending ? 'Saving...' : 'Save changes'}
         </Button>
         <Button type="button" variant="outline" onClick={() => history.back()}>
           Cancel

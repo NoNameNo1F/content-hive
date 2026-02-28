@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { MAX_TAGS_PER_POST } from '@/lib/constants'
-import type { ActionResult } from '@/types'
+import { MAX_HASHTAGS } from '@/lib/constants'
+import type { ActionResult, ContentStatus } from '@/types'
 
 export async function updatePost(
   postId: string,
@@ -15,9 +15,11 @@ export async function updatePost(
   const url = (formData.get('url') as string)?.trim() || undefined
   const thumbnail = (formData.get('thumbnail') as string)?.trim() || undefined
   const visibility = (formData.get('visibility') as 'public' | 'team') ?? 'public'
-  const status = (formData.get('status') as 'available' | 'in_use' | 'used' | 'rejected') ?? 'available'
+  const status = ((formData.get('status') as string) ?? 'available') as ContentStatus
   const creatorHandle = (formData.get('creatorHandle') as string)?.trim() || null
-  const tags = (formData.getAll('tags') as string[]).filter(Boolean).slice(0, MAX_TAGS_PER_POST)
+  const hasShoppingCart = formData.get('hasShoppingCart') === 'true'
+  const isCarousel = formData.get('isCarousel') === 'true'
+  const tags = (formData.getAll('tags') as string[]).filter(Boolean).slice(0, MAX_HASHTAGS)
   const categoryId = (formData.get('categoryId') as string) || undefined
 
   if (!title) return { success: false, error: 'Title is required.' }
@@ -41,7 +43,17 @@ export async function updatePost(
   // Update the post
   const { error: postError } = await supabase
     .from('posts')
-    .update({ title, description, url, thumbnail, visibility, status, creator_handle: creatorHandle })
+    .update({
+      title,
+      description,
+      url,
+      thumbnail,
+      visibility,
+      status,
+      creator_handle: creatorHandle,
+      has_shopping_cart: hasShoppingCart,
+      is_carousel: isCarousel,
+    })
     .eq('id', postId)
 
   if (postError) return { success: false, error: 'Failed to update post.' }

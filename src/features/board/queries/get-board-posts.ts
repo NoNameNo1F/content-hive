@@ -1,9 +1,12 @@
 import { createSupabaseServer } from '@/lib/supabase/server'
-import type { ContentStatus, PostWithRelations } from '@/types'
+import type { PostWithRelations } from '@/types'
 
-export type BoardData = Record<ContentStatus, PostWithRelations[]>
+export interface BoardData {
+  available: PostWithRelations[]
+  unavailable: PostWithRelations[]
+}
 
-/** Returns all posts visible to the current user, grouped by status. */
+/** Returns all posts visible to the current user, grouped by availability. */
 export async function getBoardPosts(): Promise<BoardData> {
   const supabase = await createSupabaseServer()
 
@@ -18,9 +21,7 @@ export async function getBoardPosts(): Promise<BoardData> {
   const posts = (data ?? []) as unknown as PostWithRelations[]
 
   return {
-    available: posts.filter((p) => p.status === 'available'),
-    in_use:    posts.filter((p) => p.status === 'in_use'),
-    used:      posts.filter((p) => p.status === 'used'),
-    rejected:  posts.filter((p) => p.status === 'rejected'),
+    available:   posts.filter((p) => p.status === 'available'),
+    unavailable: posts.filter((p) => p.status === 'unavailable'),
   }
 }

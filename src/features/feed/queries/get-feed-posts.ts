@@ -33,8 +33,8 @@ export async function getFeedPosts({
       .rpc('get_feed_personalized', {
         p_user_id:    userId,
         p_sort_by:    sortBy,
-        p_status:     status ?? null,
-        p_category_id: categoryId ?? null,
+        p_status:     status ?? undefined,
+        p_category_id: categoryId ?? undefined,
         p_limit:      limit,
         p_offset:     offset,
       })

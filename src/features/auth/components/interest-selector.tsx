@@ -5,7 +5,7 @@ import { saveInterests } from '@/features/auth/actions/save-interests'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { SUGGESTED_INTEREST_TAGS, MIN_INTEREST_TAGS, MAX_INTEREST_TAGS } from '@/lib/constants'
+import { SUGGESTED_INTEREST_TAGS, CONTENT_TYPE_LABELS, MIN_INTEREST_TAGS, MAX_INTEREST_TAGS } from '@/lib/constants'
 import type { ActionResult } from '@/types'
 
 interface InterestSelectorProps {
@@ -59,7 +59,7 @@ export function InterestSelector({ initialSelected = [] }: InterestSelectorProps
           const isDisabled = !isSelected && count >= MAX_INTEREST_TAGS
           return (
             <button
-              key={tag}
+              key={CONTENT_TYPE_LABELS[tag] ?? tag}
               type="button"
               onClick={() => toggleTag(tag)}
               disabled={isDisabled}
@@ -70,7 +70,7 @@ export function InterestSelector({ initialSelected = [] }: InterestSelectorProps
                 variant={isSelected ? 'default' : 'outline'}
                 className="text-sm transition-colors"
               >
-                {tag}
+                {CONTENT_TYPE_LABELS[tag] ?? tag}
               </Badge>
             </button>
           )

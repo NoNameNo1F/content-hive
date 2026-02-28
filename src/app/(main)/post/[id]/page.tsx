@@ -11,20 +11,29 @@ import { SimilarPosts } from '@/features/content/components/similar-posts'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ShoppingCart, Layers } from 'lucide-react'
 import type { ContentStatus } from '@/types'
 
 const STATUS_BADGE_STYLES: Record<ContentStatus, string> = {
-  available: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  in_use:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  used:      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  rejected:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  available:   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  unavailable: 'bg-muted text-muted-foreground',
 }
 
 const STATUS_LABELS: Record<ContentStatus, string> = {
-  available: 'Available',
-  in_use:    'In use',
-  used:      'Used',
-  rejected:  'Rejected',
+  available:   'Available',
+  unavailable: 'Unavailable',
+}
+
+function relativeTime(date: string): string {
+  const diff = Date.now() - new Date(date).getTime()
+  const mins  = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days  = Math.floor(diff / 86_400_000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins} minute${mins !== 1 ? 's' : ''} ago`
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  if (days < 30)  return `${days} day${days !== 1 ? 's' : ''} ago`
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 interface PostPageProps {
@@ -55,6 +64,10 @@ export default async function PostPage({ params }: PostPageProps) {
   const author  = post.profiles
   const tags    = post.post_tags.map((t) => t.tag)
   const isOwner = user?.id === post.user_id
+  const hasShoppingCart = (post as { has_shopping_cart?: boolean }).has_shopping_cart ?? false
+  const isCarousel      = (post as { is_carousel?: boolean }).is_carousel ?? false
+  const updatedAt       = (post as { updated_at?: string | null }).updated_at ?? null
+  const showUpdated     = updatedAt && Math.abs(new Date(updatedAt).getTime() - new Date(post.created_at).getTime()) > 60_000
 
   const similarPosts = await getSimilarPosts(post.id, tags)
 
@@ -67,10 +80,19 @@ export default async function PostPage({ params }: PostPageProps) {
           {post.visibility === 'team' && (
             <Badge variant="outline">Team</Badge>
           )}
-          {/* Status badge — visible to all */}
           {!isOwner && (
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_STYLES[post.status as ContentStatus]}`}>
               {STATUS_LABELS[post.status as ContentStatus]}
+            </span>
+          )}
+          {hasShoppingCart && (
+            <span className="flex items-center gap-1 rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+              <ShoppingCart size={10} /> Shop
+            </span>
+          )}
+          {isCarousel && (
+            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              <Layers size={10} /> Carousel
             </span>
           )}
         </div>
@@ -142,22 +164,26 @@ export default async function PostPage({ params }: PostPageProps) {
         <p className="leading-relaxed text-muted-foreground">{post.description}</p>
       )}
 
-      {/* Tags */}
+      {/* Hashtags */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>
-              <Badge variant="outline" className="hover:bg-accent">{tag}</Badge>
+              <Badge variant="outline" className="hover:bg-accent">#{tag}</Badge>
             </Link>
           ))}
         </div>
       )}
 
       {/* Footer */}
-      <div className="border-t pt-4 text-sm text-muted-foreground">
-        <span>
-          {post.saves_count} save{post.saves_count !== 1 ? 's' : ''}
-        </span>
+      <div className="border-t pt-4 text-sm text-muted-foreground space-y-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span>Added {relativeTime(post.created_at)}</span>
+          {showUpdated && updatedAt && (
+            <span>· Updated {relativeTime(updatedAt)}</span>
+          )}
+        </div>
+        <span>{post.saves_count} save{post.saves_count !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Similar content */}

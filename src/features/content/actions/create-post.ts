@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { broadcastTelegram } from '@/lib/telegram'
-import { MAX_TAGS_PER_POST } from '@/lib/constants'
+import { MAX_HASHTAGS } from '@/lib/constants'
 import type { ActionResult, CreatePostInput } from '@/types'
 
 export async function createPost(
@@ -15,10 +15,10 @@ export async function createPost(
   const description = (formData.get('description') as string)?.trim() || undefined
   const url = (formData.get('url') as string)?.trim() || undefined
   const thumbnail = (formData.get('thumbnail') as string)?.trim() || undefined
-  const visibility = (formData.get('visibility') as CreatePostInput['visibility']) ?? 'public'
-  const status = (formData.get('status') as CreatePostInput['status']) ?? 'available'
   const creatorHandle = (formData.get('creatorHandle') as string)?.trim() || undefined
-  const tags = (formData.getAll('tags') as string[]).filter(Boolean).slice(0, MAX_TAGS_PER_POST)
+  const hasShoppingCart = formData.get('hasShoppingCart') === 'true'
+  const isCarousel = formData.get('isCarousel') === 'true'
+  const tags = (formData.getAll('tags') as string[]).filter(Boolean).slice(0, MAX_HASHTAGS)
   const categoryId = (formData.get('categoryId') as string) || undefined
 
   if (!title) return { success: false, error: 'Title is required.' }
@@ -32,7 +32,19 @@ export async function createPost(
 
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .insert({ user_id: user.id, type, title, description, url, thumbnail, visibility, status, creator_handle: creatorHandle })
+    .insert({
+      user_id: user.id,
+      type,
+      title,
+      description,
+      url,
+      thumbnail,
+      visibility: 'public',
+      status: 'available',
+      creator_handle: creatorHandle,
+      has_shopping_cart: hasShoppingCart,
+      is_carousel: isCarousel,
+    })
     .select('id')
     .single()
 

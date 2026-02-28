@@ -12,17 +12,13 @@ import {
 import type { ContentStatus } from '@/types'
 
 const STATUS_LABELS: Record<ContentStatus, string> = {
-  available: 'Available',
-  in_use:    'In use',
-  used:      'Used',
-  rejected:  'Rejected',
+  available:   'Available',
+  unavailable: 'Unavailable',
 }
 
 const STATUS_STYLES: Record<ContentStatus, string> = {
-  available: 'text-green-700 dark:text-green-400',
-  in_use:    'text-yellow-700 dark:text-yellow-400',
-  used:      'text-blue-700 dark:text-blue-400',
-  rejected:  'text-red-700 dark:text-red-400',
+  available:   'text-green-700 dark:text-green-400',
+  unavailable: 'text-muted-foreground',
 }
 
 interface PostStatusUpdaterProps {

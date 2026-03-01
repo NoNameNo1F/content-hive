@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cleanTiktokUrl, extractTiktokHandle } from '@/lib/tiktok'
 import { MAX_HASHTAGS } from '@/lib/constants'
 import type { ActionResult, Category } from '@/types'
 
@@ -61,8 +62,13 @@ export function PostForm({ categories }: PostFormProps) {
       const res = await fetch(`/api/oembed?url=${encodeURIComponent(newUrl)}`)
       if (!res.ok) return
       const data = await res.json()
-      if (data.title && !title) setTitle(data.title)
-      if (data.authorName && !creatorHandle) setCreatorHandle(data.authorName)
+      // oEmbed title → Description (TikTok caption), not Title
+      if (data.title && !description) setDescription(data.title)
+      // Creator from @handle in canonical URL, fallback to authorName
+      const resolvedUrl = data.canonicalUrl || newUrl
+      const handle = extractTiktokHandle(resolvedUrl)
+                  ?? (data.authorName ? `@${data.authorName}` : null)
+      if (handle && !creatorHandle) setCreatorHandle(handle)
       if (data.thumbnailUrl && !thumbnail) setThumbnail(data.thumbnailUrl)
       if (data.hashtags?.length && tags.length === 0) {
         setTags(data.hashtags.slice(0, MAX_HASHTAGS))
@@ -75,9 +81,10 @@ export function PostForm({ categories }: PostFormProps) {
   }
 
   function handleUrlChange(newUrl: string) {
-    setUrl(newUrl)
-    if (platform === 'tiktok' && newUrl) {
-      handleTikTokOembed(newUrl)
+    const cleaned = platform === 'tiktok' ? cleanTiktokUrl(newUrl) : newUrl
+    setUrl(cleaned)
+    if (platform === 'tiktok' && cleaned) {
+      handleTikTokOembed(cleaned)
     }
   }
 
@@ -165,7 +172,7 @@ export function PostForm({ categories }: PostFormProps) {
             onCheckedChange={(v) => setHasShoppingCart(v === true)}
           />
           <Label htmlFor="hasShoppingCart" className="font-normal cursor-pointer">
-            Has shopping cart
+            Shopping cart
           </Label>
         </div>
       )}
@@ -243,20 +250,6 @@ export function PostForm({ categories }: PostFormProps) {
             </SelectContent>
           </Select>
           <input type="hidden" name="categoryId" value={categoryId} />
-        </div>
-      )}
-
-      {/* Is carousel — YouTube/TikTok only */}
-      {platform !== 'others' && (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="isCarousel"
-            checked={isCarousel}
-            onCheckedChange={(v) => setIsCarousel(v === true)}
-          />
-          <Label htmlFor="isCarousel" className="font-normal cursor-pointer">
-            This is a carousel (slideshow)
-          </Label>
         </div>
       )}
 

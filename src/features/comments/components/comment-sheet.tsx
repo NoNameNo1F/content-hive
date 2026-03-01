@@ -52,7 +52,7 @@ export function CommentSheet({ postId, count, currentUserId, triggerClassName }:
           <span className="text-xs">{count}</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="h-[60vh] flex flex-col">
+      <SheetContent side="right" className="w-105 max-w-[92vw] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="text-base">
             Comments {comments.length > 0 && `(${comments.length})`}

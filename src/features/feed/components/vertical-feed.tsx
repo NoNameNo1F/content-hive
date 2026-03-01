@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ThumbsUp, ThumbsDown, Share2, Check } from 'lucide-react'
+import { ArrowUp, ArrowDown, Share2, Check } from 'lucide-react'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { Button } from '@/components/ui/button'
 import { CommentSheet } from '@/features/comments/components/comment-sheet'
@@ -61,6 +61,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
   const [, startTransition] = useTransition()
 
   const isVideo = post.type === 'video' && !!post.url
+  const tiktokId = post.url?.match(/tiktok\.com\/.*\/video\/(\d+)/)?.[1] ?? null
   const author = post.profiles as { id?: string; username?: string; avatar_url?: string | null } | null
   const tags = (post.post_tags as Array<{ tag: string }> | null) ?? []
   const commentsCount = (post as { comments_count?: number }).comments_count ?? 0
@@ -70,7 +71,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
     if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => setIsActive(entry.isIntersecting),
-      { threshold: 0.6 }
+      { threshold: 0.85 }
     )
     observer.observe(el)
     return () => observer.disconnect()
@@ -121,11 +122,21 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
 
   const mediaContent = isVideo ? (
     isActive ? (
-      <VideoEmbed url={post.url!} autoplay />
+      tiktokId ? (
+        <iframe
+          src={`https://www.tiktok.com/embed/v2/${tiktokId}?autoplay=1`}
+          className="absolute inset-0 h-full w-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+          allowFullScreen
+          title={post.title}
+        />
+      ) : (
+        <VideoEmbed url={post.url!} autoplay />
+      )
     ) : (
       <div className="absolute inset-0 flex items-center justify-center bg-muted">
         {post.thumbnail ? (
-          <Image src={post.thumbnail} alt={post.title} fill className="object-cover" />
+          <Image src={post.thumbnail} alt={post.title} fill className="object-contain" />
         ) : (
           <span className="text-muted-foreground text-sm">Scroll to play</span>
         )}
@@ -133,7 +144,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
     )
   ) : post.thumbnail ? (
     <div className="absolute inset-0">
-      <Image src={post.thumbnail} alt={post.title} fill className="object-cover" />
+      <Image src={post.thumbnail} alt={post.title} fill className="object-contain" />
     </div>
   ) : (
     <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -188,7 +199,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
           activeClass="border-blue-400/80 bg-blue-500/25 text-blue-300"
           defaultClass="border-blue-400/40 bg-black/20 text-blue-200/70 hover:bg-blue-500/15"
         >
-          <ThumbsUp size={16} />
+          <ArrowUp size={16} />
         </RailPill>
 
         {/* Downvote */}
@@ -200,7 +211,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
           activeClass="border-red-400/80 bg-red-500/25 text-red-300"
           defaultClass="border-red-400/40 bg-black/20 text-red-200/70 hover:bg-red-500/15"
         >
-          <ThumbsDown size={16} />
+          <ArrowDown size={16} />
         </RailPill>
 
         {/* Comments — use CommentSheet with overridden trigger style */}

@@ -3,14 +3,40 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Check } from 'lucide-react'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { Button } from '@/components/ui/button'
-import { UserAvatar } from '@/components/shared/user-avatar'
 import { CommentSheet } from '@/features/comments/components/comment-sheet'
 import { SaveToListButton } from '@/features/saved-lists/components/save-to-list-button'
 import { toggleVote } from '@/features/content/actions/toggle-vote'
 import type { PostWithRelations } from '@/types'
+
+// ─── Outlined rail pill button ────────────────────────────────────────────────
+
+interface RailPillProps {
+  children: React.ReactNode
+  onClick?: () => void
+  active?: boolean
+  activeClass?: string
+  defaultClass?: string
+  label: string
+  count?: number | string
+}
+
+function RailPill({ children, onClick, active, activeClass, defaultClass, label, count }: RailPillProps) {
+  const base = 'rounded-2xl border px-2.5 py-1.5 flex flex-col items-center gap-0.5 transition-colors cursor-pointer'
+  const colorClass = active
+    ? (activeClass ?? 'border-white/40 bg-white/20 text-white')
+    : (defaultClass ?? 'border-white/30 bg-black/20 text-white/80 hover:bg-white/10')
+  return (
+    <button type="button" onClick={onClick} aria-label={label} className={`${base} ${colorClass}`}>
+      {children}
+      {count !== undefined && (
+        <span className="text-[10px] font-medium leading-none">{count}</span>
+      )}
+    </button>
+  )
+}
 
 // ─── Single card ─────────────────────────────────────────────────────────────
 
@@ -31,6 +57,7 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
   )
   const [downvotes, setDownvotes] = useState(0)
   const [userVote, setUserVote] = useState<1 | -1 | null>(initialUserVote)
+  const [copied, setCopied] = useState(false)
   const [, startTransition] = useTransition()
 
   const isVideo = post.type === 'video' && !!post.url
@@ -86,18 +113,19 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
     })
   }
 
+  function handleShare() {
+    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const mediaContent = isVideo ? (
     isActive ? (
       <VideoEmbed url={post.url!} autoplay />
     ) : (
       <div className="absolute inset-0 flex items-center justify-center bg-muted">
         {post.thumbnail ? (
-          <Image
-            src={post.thumbnail}
-            alt={post.title}
-            fill
-            className="object-cover"
-          />
+          <Image src={post.thumbnail} alt={post.title} fill className="object-cover" />
         ) : (
           <span className="text-muted-foreground text-sm">Scroll to play</span>
         )}
@@ -105,18 +133,16 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
     )
   ) : post.thumbnail ? (
     <div className="absolute inset-0">
-      <Image
-        src={post.thumbnail}
-        alt={post.title}
-        fill
-        className="object-cover"
-      />
+      <Image src={post.thumbnail} alt={post.title} fill className="object-cover" />
     </div>
   ) : (
     <div className="absolute inset-0 flex items-center justify-center bg-muted">
       <span className="text-muted-foreground text-sm capitalize">{post.type}</span>
     </div>
   )
+
+  // Shared pill style for comment + save triggers in the rail
+  const railTriggerClass = 'rounded-2xl border border-white/30 bg-black/20 text-white/80 hover:bg-white/10 h-auto px-2.5 py-1.5 flex flex-col items-center gap-0.5 w-full'
 
   return (
     <div ref={ref} className="relative h-full w-full max-w-lg overflow-hidden rounded-xl bg-black">
@@ -151,68 +177,54 @@ function VerticalFeedCard({ post, currentUserId, userVote: initialUserVote }: Ve
         )}
       </div>
 
-      {/* Right action rail */}
-      <div className="absolute right-3 bottom-20 flex flex-col gap-5 items-center z-10">
-        {/* Author avatar */}
-        {author?.username && (
-          <Link href={`/profile/${author.id ?? ''}`}>
-            <UserAvatar
-              username={author.username}
-              avatarUrl={author.avatar_url}
-              size="sm"
-            />
-          </Link>
-        )}
-
+      {/* Right action rail — outlined pills */}
+      <div className="absolute right-3 bottom-20 flex flex-col gap-3 items-center z-10 w-12">
         {/* Upvote */}
-        <div className="flex flex-col items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => handleVote(1)}
-            className={`rounded-full p-1.5 transition-colors ${
-              userVote === 1
-                ? 'text-primary bg-primary/20'
-                : 'text-white hover:text-primary hover:bg-primary/10'
-            }`}
-            aria-label="Upvote"
-          >
-            <ThumbsUp size={20} />
-          </button>
-          <span className={`text-xs font-medium ${userVote === 1 ? 'text-primary' : 'text-white'}`}>
-            {upvotes}
-          </span>
-        </div>
+        <RailPill
+          label="Upvote"
+          count={upvotes}
+          onClick={() => handleVote(1)}
+          active={userVote === 1}
+          activeClass="border-blue-400/80 bg-blue-500/25 text-blue-300"
+          defaultClass="border-blue-400/40 bg-black/20 text-blue-200/70 hover:bg-blue-500/15"
+        >
+          <ThumbsUp size={16} />
+        </RailPill>
 
         {/* Downvote */}
-        <div className="flex flex-col items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => handleVote(-1)}
-            className={`rounded-full p-1.5 transition-colors ${
-              userVote === -1
-                ? 'text-destructive bg-destructive/20'
-                : 'text-white hover:text-destructive hover:bg-destructive/10'
-            }`}
-            aria-label="Downvote"
-          >
-            <ThumbsDown size={20} />
-          </button>
-          <span className={`text-xs font-medium ${userVote === -1 ? 'text-destructive' : 'text-white'}`}>
-            {downvotes}
-          </span>
-        </div>
+        <RailPill
+          label="Downvote"
+          count={downvotes}
+          onClick={() => handleVote(-1)}
+          active={userVote === -1}
+          activeClass="border-red-400/80 bg-red-500/25 text-red-300"
+          defaultClass="border-red-400/40 bg-black/20 text-red-200/70 hover:bg-red-500/15"
+        >
+          <ThumbsDown size={16} />
+        </RailPill>
 
-        {/* Comments */}
-        <div className="flex flex-col items-center gap-0.5">
-          <CommentSheet
-            postId={post.id}
-            count={commentsCount}
-            currentUserId={currentUserId ?? null}
-          />
-        </div>
+        {/* Comments — use CommentSheet with overridden trigger style */}
+        <CommentSheet
+          postId={post.id}
+          count={commentsCount}
+          currentUserId={currentUserId ?? null}
+          triggerClassName={railTriggerClass}
+        />
 
         {/* Save to list */}
-        <SaveToListButton postId={post.id} />
+        <SaveToListButton postId={post.id} triggerClassName={railTriggerClass} />
+
+        {/* Share */}
+        <RailPill
+          label="Share"
+          onClick={handleShare}
+          active={copied}
+          activeClass="border-green-400/80 bg-green-500/25 text-green-300"
+          defaultClass="border-white/30 bg-black/20 text-white/80 hover:bg-white/10"
+          count={copied ? 'Copied' : 'Share'}
+        >
+          {copied ? <Check size={16} /> : <Share2 size={16} />}
+        </RailPill>
       </div>
     </div>
   )

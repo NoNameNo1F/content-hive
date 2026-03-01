@@ -2,9 +2,30 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { createSupabaseAdmin } from '@/lib/supabase/admin'
 import { broadcastTelegram } from '@/lib/telegram'
+import { getEmbeddingConfig, generateEmbedding } from '@/lib/embeddings'
 import { MAX_HASHTAGS } from '@/lib/constants'
 import type { ActionResult, CreatePostInput } from '@/types'
+
+async function generatePostEmbedding(
+  postId:      string,
+  title:       string,
+  description: string | undefined
+) {
+  try {
+    const config = await getEmbeddingConfig()
+    if (!config) return
+    const text      = [title, description].filter(Boolean).join(' ')
+    const embedding = await generateEmbedding(text, config)
+    const admin     = createSupabaseAdmin()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = admin as any
+    await db.from('posts').update({ embedding }).eq('id', postId)
+  } catch {
+    // Ignore — search falls back to FTS when embeddings are unavailable
+  }
+}
 
 export async function createPost(
   _prevState: ActionResult | null,
@@ -72,6 +93,9 @@ export async function createPost(
     user.id,
     `📢 <b>${username}</b> added a new post: <a href="${appUrl}/post/${post.id}">${title}</a>`
   )
+
+  // Generate and store embedding (fire-and-forget)
+  void generatePostEmbedding(post.id, title, description)
 
   redirect(`/post/${post.id}`)
 }

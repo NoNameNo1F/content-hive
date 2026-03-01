@@ -108,7 +108,7 @@ export function FeedList({
   return (
     <div className="space-y-6">
       {/* Sort + status filter row */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
         {/* Sort tabs */}
         <div className="flex items-center gap-1 rounded-lg border p-1">
           {SORT_OPTIONS.map(({ value, label, title }) => (

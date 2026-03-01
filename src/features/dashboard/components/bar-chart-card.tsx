@@ -61,7 +61,7 @@ export function BarChartCard({ title, data, defaultColor = DEFAULT_COLOR }: BarC
             axisLine={false}
             width={24}
           />
-          <Tooltip content={ChartTooltip} cursor={{ fill: 'hsl(var(--accent))' }} />
+          <Tooltip content={ChartTooltip} cursor={false} />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.color ?? defaultColor} />

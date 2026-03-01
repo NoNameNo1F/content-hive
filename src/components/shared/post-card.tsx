@@ -177,6 +177,11 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
           />
         </div>
       )}
+      {!isVideo && !post.thumbnail && (
+        <div className="flex aspect-video w-full items-center justify-center bg-linear-to-br from-muted to-muted/60 rounded-t-lg">
+          <Badge variant="secondary" className="capitalize text-sm">{post.type}</Badge>
+        </div>
+      )}
 
       <div className="space-y-3 p-4">
         {/* Header row */}

@@ -18,9 +18,10 @@ interface CommentSheetProps {
   postId: string
   count: number
   currentUserId: string | null
+  triggerClassName?: string
 }
 
-export function CommentSheet({ postId, count, currentUserId }: CommentSheetProps) {
+export function CommentSheet({ postId, count, currentUserId, triggerClassName }: CommentSheetProps) {
   const [open, setOpen] = useState(false)
   const [comments, setComments] = useState<CommentRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -46,7 +47,7 @@ export function CommentSheet({ postId, count, currentUserId }: CommentSheetProps
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className={triggerClassName ?? 'gap-1.5 text-muted-foreground hover:text-foreground'}>
           <MessageCircle size={15} />
           <span className="text-xs">{count}</span>
         </Button>

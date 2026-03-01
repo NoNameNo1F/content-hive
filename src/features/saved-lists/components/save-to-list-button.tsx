@@ -19,9 +19,10 @@ interface ListOption {
 
 interface SaveToListButtonProps {
   postId: string
+  triggerClassName?: string
 }
 
-export function SaveToListButton({ postId }: SaveToListButtonProps) {
+export function SaveToListButton({ postId, triggerClassName }: SaveToListButtonProps) {
   const [lists, setLists] = useState<ListOption[]>([])
   const [membership, setMembership] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
@@ -81,7 +82,7 @@ export function SaveToListButton({ postId }: SaveToListButtonProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          className={triggerClassName ?? 'h-8 w-8 text-muted-foreground hover:text-foreground'}
           aria-label="Save to list"
         >
           <Bookmark size={15} className={savedCount > 0 ? 'fill-current' : ''} />

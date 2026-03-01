@@ -12,12 +12,15 @@ export async function GET(req: Request) {
   const db = supabase as any
   const { data, error } = await db
     .from('comments')
-    .select('id, post_id, user_id, parent_id, content, created_at, profiles:user_id(username, avatar_url)')
+    .select('id, post_id, user_id, parent_id, content, created_at, profiles!comments_user_id_fkey(username, avatar_url)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   return new Response(JSON.stringify(data ?? []), {

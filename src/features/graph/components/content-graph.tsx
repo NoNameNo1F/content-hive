@@ -5,6 +5,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  MarkerType,
   useNodesState,
   useEdgesState,
   type Node,
@@ -313,12 +314,15 @@ function buildElements(
         data: { kind: 'post', label: post.title, post, categoryColor: color, radius } as unknown as Record<string, unknown>,
         draggable: true,
       })
-      // post → category edge
+      // category → post edge
       edges.push({
         id: `e-cat-${cat.id}-${post.id}`,
         source: `cat-${cat.id}`,
         target: id,
-        style: { stroke: '#94a3b8', strokeWidth: 1.5 },
+        type: 'smoothstep',
+        animated: true,
+        style: { stroke: '#6366f1', strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' },
       })
     }
   }
@@ -340,7 +344,9 @@ function buildElements(
         id: `e-tag-${h.tag}-${pid}`,
         source: `post-${pid}`,
         target: id,
-        style: { stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 2' },
+        type: 'smoothstep',
+        animated: true,
+        style: { stroke: '#22c55e', strokeWidth: 1.5, strokeDasharray: '5 3' },
       })
     }
   }

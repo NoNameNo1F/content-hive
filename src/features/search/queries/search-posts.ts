@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { DEFAULT_PAGE_SIZE, SEARCH_MIN_QUERY_LENGTH } from '@/lib/constants'
+import { getEmbeddingConfig, generateEmbedding } from '@/lib/embeddings'
 import type { ContentStatus, PostWithRelations } from '@/types'
 
 interface SearchParams {
@@ -16,8 +17,9 @@ interface SearchResult {
 }
 
 /**
- * Full-text search across posts using the fts tsvector column.
- * RLS applies automatically — team posts only appear for authenticated users.
+ * Search posts. On page 0 with a substantial query, attempts vector similarity
+ * search if an embedding provider is configured. Falls back to FTS on failure
+ * or if no config exists.
  */
 export async function searchPosts({
   q,
@@ -27,8 +29,73 @@ export async function searchPosts({
   page = 0,
 }: SearchParams): Promise<SearchResult> {
   const supabase = await createSupabaseServer()
+
+  // ── Vector search (first page only, requires embedding config) ───────────────
+  if (q && q.length >= SEARCH_MIN_QUERY_LENGTH && page === 0) {
+    try {
+      const config = await getEmbeddingConfig()
+      if (config) {
+        const embedding    = await generateEmbedding(q, config)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db           = supabase as any
+        const { data: matches } = await db.rpc('match_posts', {
+          query_embedding: embedding,
+          match_count:     50,
+        })
+
+        if (matches && (matches as { id: string }[]).length > 0) {
+          const matchedIds = (matches as { id: string }[]).map((m) => m.id)
+          const orderMap   = new Map(matchedIds.map((id, i) => [id, i]))
+
+          let query = supabase
+            .from('posts')
+            .select(
+              '*, profiles!posts_user_id_fkey(id, username, avatar_url), post_tags(tag)',
+              { count: 'exact' }
+            )
+            .in('id', matchedIds)
+
+          if (status) {
+            query = query.eq('status', status)
+          }
+
+          if (categoryId) {
+            const { data: catRows } = await supabase
+              .from('post_categories')
+              .select('post_id')
+              .eq('category_id', categoryId)
+            const catIds = catRows?.map((r) => r.post_id) ?? []
+            if (catIds.length === 0) return { posts: [], total: 0 }
+            query = query.in('id', catIds)
+          }
+
+          if (tags && tags.length > 0) {
+            const { data: tagRows } = await supabase
+              .from('post_tags')
+              .select('post_id')
+              .in('tag', tags)
+            const tagIds = [...new Set(tagRows?.map((r) => r.post_id) ?? [])]
+            if (tagIds.length === 0) return { posts: [], total: 0 }
+            query = query.in('id', tagIds)
+          }
+
+          const { data, count } = await query
+          if (data && data.length > 0) {
+            const sorted = (data as PostWithRelations[]).sort(
+              (a, b) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999)
+            )
+            return { posts: sorted, total: count ?? sorted.length }
+          }
+        }
+      }
+    } catch {
+      // Fall through to FTS
+    }
+  }
+
+  // ── FTS fallback ──────────────────────────────────────────────────────────────
   const from = page * DEFAULT_PAGE_SIZE
-  const to = from + DEFAULT_PAGE_SIZE - 1
+  const to   = from + DEFAULT_PAGE_SIZE - 1
 
   let query = supabase
     .from('posts')
@@ -45,7 +112,6 @@ export async function searchPosts({
   }
 
   if (categoryId) {
-    // Filter via post_categories junction
     const { data: categoryPostIds } = await supabase
       .from('post_categories')
       .select('post_id')

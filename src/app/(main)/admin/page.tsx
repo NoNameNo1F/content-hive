@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { DeletePostButton } from '@/features/content/components/delete-post-button'
 import { AdminCategoriesPanel } from '@/features/admin/components/admin-categories-panel'
+import { AdminEmbeddingPanel } from '@/features/admin/components/admin-embedding-panel'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getEmbeddingConfig } from '@/lib/embeddings'
 import Link from 'next/link'
 
 export const metadata = { title: 'Admin — ContentHive' }
@@ -38,6 +40,8 @@ export default async function AdminPage() {
     .select('*')
     .order('name', { ascending: true })
 
+  const embeddingConfig = await getEmbeddingConfig()
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -48,6 +52,7 @@ export default async function AdminPage() {
         <TabsList>
           <TabsTrigger value="posts">Posts ({posts?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="embedding">Embedding</TabsTrigger>
         </TabsList>
 
         {/* Posts tab */}
@@ -93,6 +98,11 @@ export default async function AdminPage() {
         {/* Categories tab */}
         <TabsContent value="categories" className="mt-4">
           <AdminCategoriesPanel initialCategories={categories ?? []} />
+        </TabsContent>
+
+        {/* Embedding tab */}
+        <TabsContent value="embedding" className="mt-4">
+          <AdminEmbeddingPanel initialConfig={embeddingConfig} />
         </TabsContent>
       </Tabs>
     </div>

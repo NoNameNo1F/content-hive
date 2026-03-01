@@ -16,7 +16,7 @@ export async function getComments(postId: string): Promise<CommentRow[]> {
   const db = supabase as any
   const { data } = await db
     .from('comments')
-    .select('id, post_id, user_id, parent_id, content, created_at, profiles:user_id(username, avatar_url)')
+    .select('id, post_id, user_id, parent_id, content, created_at, profiles!comments_user_id_fkey(username, avatar_url)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
   return (data ?? []) as CommentRow[]

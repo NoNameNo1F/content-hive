@@ -57,7 +57,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
             axisLine={false}
             width={20}
           />
-          <Tooltip content={ChartTooltip} cursor={{ fill: 'hsl(var(--accent))' }} />
+          <Tooltip content={ChartTooltip} cursor={false} />
           <Area
             type="monotone"
             dataKey="count"

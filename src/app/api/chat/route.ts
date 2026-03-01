@@ -2,7 +2,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { createSupabaseAdmin } from '@/lib/supabase/admin'
 import { decrypt } from '@/lib/encryption'
 import { getAdapter } from '@/lib/llm'
-import { AGENT_TOOLS } from '@/lib/llm/tools'
+import { AGENT_TOOLS, WRITE_TOOL_NAMES } from '@/lib/llm/tools'
 import { executeTool } from '@/lib/llm/execute-tool'
 import Anthropic from '@anthropic-ai/sdk'
 import type { LLMProvider, ChatMessage } from '@/lib/llm'
@@ -132,6 +132,25 @@ export async function POST(req: Request) {
                   enc.encode(`data: ${JSON.stringify({ toolCall: { name: block.name } })}\n\n`)
                 )
                 const result = await executeTool(block.name, block.input as Record<string, unknown>)
+
+                // Emit write proposal card for write tools
+                if (WRITE_TOOL_NAMES.has(block.name)) {
+                  try {
+                    const parsed = JSON.parse(result) as Record<string, unknown>
+                    if (parsed.confirmationId) {
+                      controller.enqueue(
+                        enc.encode(`data: ${JSON.stringify({
+                          writeProposal: {
+                            confirmationId: parsed.confirmationId,
+                            toolName: block.name,
+                            proposal: parsed.proposal,
+                          },
+                        })}\n\n`)
+                      )
+                    }
+                  } catch { /* ignore parse errors */ }
+                }
+
                 toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result })
               }
               history = [

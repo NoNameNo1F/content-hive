@@ -63,6 +63,31 @@ export async function executeTool(name: string, input: Record<string, unknown>):
       return JSON.stringify(sorted)
     }
 
+    if (name === 'create_post' || name === 'update_post_status') {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return JSON.stringify({ error: 'Unauthorized' })
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any
+      const { data, error } = await db
+        .from('write_confirmations')
+        .insert({
+          user_id: user.id,
+          tool_name: name,
+          payload: input,
+        })
+        .select('id')
+        .single()
+
+      if (error || !data) return JSON.stringify({ error: 'Failed to create confirmation' })
+
+      return JSON.stringify({
+        confirmationId: (data as { id: string }).id,
+        proposal: input,
+        message: 'A confirmation card has been shown to the user. Do not proceed until they confirm.',
+      })
+    }
+
     return JSON.stringify({ error: `Unknown tool: ${name}` })
   } catch (err) {
     return JSON.stringify({ error: err instanceof Error ? err.message : 'Tool execution failed' })

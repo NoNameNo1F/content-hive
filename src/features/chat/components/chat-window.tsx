@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { PROVIDER_META } from '@/lib/llm'
+import { WriteProposalCard } from './write-proposal-card'
+import type { WriteProposal } from './write-proposal-card'
 import type { LLMProvider } from '@/lib/llm'
 
 interface Message {
@@ -30,6 +32,7 @@ export function ChatWindow({
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [toolCallLabel, setToolCallLabel] = useState<string | null>(null)
+  const [proposals, setProposals] = useState<WriteProposal[]>([])
   const [error, setError] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -37,7 +40,7 @@ export function ChatWindow({
   // Auto-scroll to bottom when messages change or streaming updates
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent])
+  }, [messages, streamingContent, proposals])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,6 +52,7 @@ export function ChatWindow({
     setIsStreaming(true)
     setStreamingContent('')
     setToolCallLabel(null)
+    setProposals([])
 
     // Optimistically add user message to UI
     const tempId = `temp-${Date.now()}`
@@ -80,11 +84,20 @@ export function ChatWindow({
           const data = line.slice(6)
           if (data === '[DONE]') break
           try {
-            const parsed = JSON.parse(data)
+            const parsed = JSON.parse(data) as {
+              error?: string
+              toolCall?: { name: string }
+              writeProposal?: WriteProposal
+              chunk?: string
+            }
             if (parsed.error) throw new Error(parsed.error)
             if (parsed.toolCall) {
               const label = `Searching ${parsed.toolCall.name.replace(/_/g, ' ')}…`
               setToolCallLabel(label)
+            }
+            if (parsed.writeProposal) {
+              setProposals((prev) => [...prev, parsed.writeProposal!])
+              setToolCallLabel(null)
             }
             if (parsed.chunk) {
               setToolCallLabel(null)
@@ -161,6 +174,11 @@ export function ChatWindow({
               <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
             </div>
           </div>
+        ))}
+
+        {/* Write proposal cards — shown below the last assistant turn */}
+        {proposals.map((p) => (
+          <WriteProposalCard key={p.confirmationId} proposal={p} />
         ))}
 
         {/* Tool call indicator */}

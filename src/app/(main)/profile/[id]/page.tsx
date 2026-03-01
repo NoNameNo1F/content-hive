@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { Layers } from 'lucide-react'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { createSupabaseAdmin } from '@/lib/supabase/admin'
+import { getUserLists } from '@/features/saved-lists/queries/get-user-lists'
 import { PostCard } from '@/components/shared/post-card'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -20,7 +22,7 @@ interface ProfilePageProps {
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
   const { id } = await params
   const { tab } = await searchParams
-  const activeTab = tab === 'saved' ? 'saved' : 'posts'
+  const activeTab = tab === 'saved' ? 'saved' : tab === 'lists' ? 'lists' : 'posts'
 
   const supabase = await createSupabaseServer()
   const {
@@ -69,7 +71,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     .eq('user_id', id)
     .order('created_at', { ascending: false })
 
-  // Fetch bookmarked posts (only accessible for own profile or when RLS allows)
+  // Fetch bookmarked posts (only accessible for own profile)
   let savedPosts: PostWithRelations[] = []
   if (isOwnProfile && currentUser) {
     const { data: bookmarks } = await supabase
@@ -87,6 +89,9 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
       savedPosts = (bookmarkedPosts ?? []) as unknown as PostWithRelations[]
     }
   }
+
+  // Fetch lists for own profile
+  const userLists = isOwnProfile ? await getUserLists(id) : []
 
   // Fetch current user's bookmarked IDs (for PostCard bookmark state)
   let bookmarkedIds: string[] = []
@@ -171,39 +176,83 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
               </Link>
             </TabsTrigger>
           )}
+          {isOwnProfile && (
+            <TabsTrigger value="lists" asChild>
+              <Link href={`/profile/${id}?tab=lists`}>
+                Lists ({userLists.length})
+              </Link>
+            </TabsTrigger>
+          )}
         </TabsList>
       </Tabs>
 
-      {/* Posts grid */}
-      {displayPosts.length === 0 ? (
-        <EmptyState
-          title={activeTab === 'saved' ? 'No saved posts yet' : 'No posts yet'}
-          description={
-            activeTab === 'saved'
-              ? 'Bookmark posts to save them here.'
-              : isOwnProfile
-                ? 'Share your first link, video, or text.'
-                : undefined
-          }
-          action={
-            isOwnProfile && activeTab === 'posts' ? (
-              <Button asChild size="sm">
-                <Link href="/create">Create post</Link>
+      {/* Lists tab content */}
+      {activeTab === 'lists' && (
+        userLists.length === 0 ? (
+          <EmptyState
+            title="No lists yet"
+            description="Create lists to organise posts into collections."
+            action={
+              <Button asChild size="sm" variant="outline">
+                <Link href="/lists">Manage lists</Link>
               </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {displayPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              isBookmarked={bookmarkedSet.has(post.id)}
-              currentUserId={currentUser?.id ?? null}
-            />
-          ))}
-        </div>
+            }
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {userLists.map((list) => (
+              <Link
+                key={list.id}
+                href={`/lists/${list.id}`}
+                className="flex items-center gap-3 rounded-lg border bg-card p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <Layers size={18} className="text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium leading-snug truncate">{list.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {list.item_count} post{list.item_count !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Posts grid — shown for posts and saved tabs */}
+      {activeTab !== 'lists' && (
+        displayPosts.length === 0 ? (
+          <EmptyState
+            title={activeTab === 'saved' ? 'No saved posts yet' : 'No posts yet'}
+            description={
+              activeTab === 'saved'
+                ? 'Bookmark posts to save them here.'
+                : isOwnProfile
+                  ? 'Share your first link, video, or text.'
+                  : undefined
+            }
+            action={
+              isOwnProfile && activeTab === 'posts' ? (
+                <Button asChild size="sm">
+                  <Link href="/create">Create post</Link>
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {displayPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                isBookmarked={bookmarkedSet.has(post.id)}
+                currentUserId={currentUser?.id ?? null}
+              />
+            ))}
+          </div>
+        )
       )}
     </div>
   )

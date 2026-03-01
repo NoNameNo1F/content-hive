@@ -9,6 +9,7 @@ import { DeletePostButton } from '@/features/content/components/delete-post-butt
 import { PostStatusUpdater } from '@/features/content/components/post-status-updater'
 import { SimilarPosts } from '@/features/content/components/similar-posts'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
+import { CommentSheet } from '@/features/comments/components/comment-sheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, Layers } from 'lucide-react'
@@ -114,6 +115,11 @@ export default async function PostPage({ params }: PostPageProps) {
             {isOwner && (
               <PostStatusUpdater postId={post.id} currentStatus={post.status as ContentStatus} />
             )}
+            <CommentSheet
+              postId={post.id}
+              count={(post as { comments_count?: number }).comments_count ?? 0}
+              currentUserId={user?.id ?? null}
+            />
             {user && (
               <BookmarkButton postId={post.id} initialBookmarked={isBookmarked} />
             )}

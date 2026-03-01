@@ -1,6 +1,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 
-/** Read-only tools exposed to the Claude agent. No write tools. */
+export const WRITE_TOOL_NAMES = new Set(['create_post', 'update_post_status'])
+
+/** All tools exposed to the Claude agent (read + proposed write). */
 export const AGENT_TOOLS: Anthropic.Messages.Tool[] = [
   {
     name: 'search_posts',
@@ -42,6 +44,37 @@ export const AGENT_TOOLS: Anthropic.Messages.Tool[] = [
       properties: {
         limit: { type: 'number', description: 'Max hashtags to return (default 20, max 50)' },
       },
+    },
+  },
+  {
+    name: 'create_post',
+    description:
+      'Propose creating a new post in the ContentHive library. Returns a confirmation ID — ' +
+      'tell the user a proposal card has been generated and they must confirm before the post is saved.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title:           { type: 'string', description: 'Post title' },
+        url:             { type: 'string', description: 'URL of the content' },
+        description:     { type: 'string', description: 'Short description' },
+        type:            { type: 'string', enum: ['video', 'article', 'image', 'other'], description: 'Content type' },
+        creator_handle:  { type: 'string', description: 'Creator / author handle' },
+      },
+      required: ['title', 'url', 'type'],
+    },
+  },
+  {
+    name: 'update_post_status',
+    description:
+      'Propose changing the status of an existing post. Returns a confirmation ID — ' +
+      'tell the user a proposal card has been generated and they must confirm before the status changes.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        post_id: { type: 'string', description: 'UUID of the post to update' },
+        status:  { type: 'string', enum: ['available', 'unavailable'], description: 'New status' },
+      },
+      required: ['post_id', 'status'],
     },
   },
 ]

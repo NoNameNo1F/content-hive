@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Layers } from 'lucide-react'
+import { ShoppingCart, Layers, MessageCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BookmarkButton } from '@/components/shared/bookmark-button'
+import { SaveToListButton } from '@/features/saved-lists/components/save-to-list-button'
 import { VideoEmbed } from '@/features/content/components/video-embed'
 import { VoteButtons } from '@/features/content/components/vote-buttons'
 import { cn } from '@/lib/utils'
@@ -186,7 +187,8 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
           </div>
 
           {currentUserId && (
-            <div className="shrink-0">
+            <div className="shrink-0 flex items-center gap-1">
+              <SaveToListButton postId={post.id} />
               <BookmarkButton postId={post.id} initialBookmarked={isBookmarked} />
             </div>
           )}
@@ -240,6 +242,10 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
           <div className="flex items-center gap-2">
             <StatusBadge status={post.status} />
             <span>{post.saves_count} save{post.saves_count !== 1 ? 's' : ''}</span>
+            <span className="flex items-center gap-0.5">
+              <MessageCircle size={11} />
+              {(post as { comments_count?: number }).comments_count ?? 0}
+            </span>
           </div>
         </div>
       </div>

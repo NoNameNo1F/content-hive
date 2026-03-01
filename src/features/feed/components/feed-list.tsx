@@ -2,19 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { PostCard } from '@/components/shared/post-card'
 import { Button } from '@/components/ui/button'
-import { LayoutGrid, GalleryVertical } from 'lucide-react'
 import { VerticalFeed } from '@/features/feed/components/vertical-feed'
-import type { Category, ContentStatus, PostWithRelations } from '@/types'
+import type { ContentStatus, PostWithRelations } from '@/types'
 import type { FeedSortBy } from '@/features/feed/queries/get-feed-posts'
-
-type FeedLayout = 'grid' | 'scroll'
-
-function getInitialLayout(): FeedLayout {
-  if (typeof window === 'undefined') return 'grid'
-  return (localStorage.getItem('feed-layout') as FeedLayout) ?? 'grid'
-}
 
 const STATUS_OPTIONS: { value: ContentStatus; label: string; className: string }[] = [
   { value: 'available',   label: 'Available',   className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
@@ -27,16 +18,6 @@ const SORT_OPTIONS: { value: FeedSortBy; label: string; title: string }[] = [
   { value: 'top',  label: '⭐ Top',  title: 'Most saved' },
 ]
 
-// Category colour dots matching the graph page
-const CAT_DOT: Record<string, string> = {
-  'personal-story': 'bg-violet-500',
-  'collections':    'bg-blue-600',
-  'comparison':     'bg-amber-500',
-  'fact-check':     'bg-red-600',
-  'tutorial':       'bg-green-600',
-  'product-story':  'bg-cyan-600',
-}
-
 interface FeedListProps {
   initialPosts:       PostWithRelations[]
   bookmarkedIds:      string[]
@@ -46,7 +27,6 @@ interface FeedListProps {
   userId?:            string | null
   initialSort?:       FeedSortBy
   initialStatus?:     ContentStatus
-  categories?:        Category[]
   initialCategoryId?: string | null
 }
 
@@ -59,7 +39,6 @@ export function FeedList({
   userId,
   initialSort = 'hot',
   initialStatus,
-  categories = [],
   initialCategoryId,
 }: FeedListProps) {
   const router       = useRouter()
@@ -73,18 +52,8 @@ export function FeedList({
   const [posts, setPosts]     = useState(initialPosts)
   const [page, setPage]       = useState(0)
   const [hasMore, setHasMore] = useState(initialHasMore)
-  const [bookmarked]          = useState(new Set(bookmarkedIds))
   const [userVotes]           = useState<Record<string, 1 | -1>>(initialUserVotes)
   const [isPending, startTransition] = useTransition()
-  const [layout, setLayout]   = useState<FeedLayout>(getInitialLayout)
-
-  function toggleLayout() {
-    setLayout((prev) => {
-      const next: FeedLayout = prev === 'grid' ? 'scroll' : 'grid'
-      localStorage.setItem('feed-layout', next)
-      return next
-    })
-  }
 
   function pushParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -101,10 +70,6 @@ export function FeedList({
 
   function handleStatusFilter(s: ContentStatus) {
     pushParams({ status: currentStatus === s ? null : s })
-  }
-
-  function handleCategoryFilter(id: string) {
-    pushParams({ category: currentCategoryId === id ? null : id })
   }
 
   function handleLoadMore() {
@@ -144,17 +109,6 @@ export function FeedList({
     <div className="space-y-6">
       {/* Sort + status filter row */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {/* Layout toggle */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={toggleLayout}
-          title={layout === 'grid' ? 'Switch to scroll feed' : 'Switch to grid'}
-          className="h-8 w-8"
-        >
-          {layout === 'grid' ? <GalleryVertical size={16} /> : <LayoutGrid size={16} />}
-        </Button>
         {/* Sort tabs */}
         <div className="flex items-center gap-1 rounded-lg border p-1">
           {SORT_OPTIONS.map(({ value, label, title }) => (
@@ -187,71 +141,15 @@ export function FeedList({
         </div>
       </div>
 
-      {/* Category chips */}
-      {categories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Category:</span>
-          {categories.map((cat) => {
-            const active = currentCategoryId === cat.id
-            const dot    = CAT_DOT[cat.slug] ?? 'bg-gray-400'
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleCategoryFilter(cat.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-                  active
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'hover:bg-accent border-border'
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${dot}`} />
-                {cat.name}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {layout === 'scroll' ? (
-        <VerticalFeed
-          posts={posts}
-          bookmarkedIds={bookmarkedIds}
-          userVotes={userVotes}
-          currentUserId={currentUserId}
-          hasMore={hasMore}
-          onLoadMore={handleLoadMore}
-          isLoadingMore={isPending}
-        />
-      ) : (
-        <>
-          {/* Post grid */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                isBookmarked={bookmarked.has(post.id)}
-                currentUserId={currentUserId}
-                userVote={userVotes[post.id] ?? null}
-              />
-            ))}
-          </div>
-
-          {/* Load more */}
-          {hasMore && (
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                onClick={handleLoadMore}
-                disabled={isPending}
-              >
-                {isPending ? 'Loading…' : 'Load more'}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      <VerticalFeed
+        posts={posts}
+        bookmarkedIds={bookmarkedIds}
+        userVotes={userVotes}
+        currentUserId={currentUserId}
+        hasMore={hasMore}
+        onLoadMore={handleLoadMore}
+        isLoadingMore={isPending}
+      />
     </div>
   )
 }

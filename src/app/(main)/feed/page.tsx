@@ -5,7 +5,7 @@ import { getFeedPosts, type FeedSortBy } from '@/features/feed/queries/get-feed-
 import { getUserVotes } from '@/features/content/queries/get-user-votes'
 import { FeedList } from '@/features/feed/components/feed-list'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
-import type { Category, ContentStatus } from '@/types'
+import type { ContentStatus } from '@/types'
 
 export const metadata = { title: 'Feed — ContentHive' }
 
@@ -34,10 +34,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }
   }
 
-  const [posts, { data: categories }] = await Promise.all([
-    getFeedPosts({ userId: user?.id, page: 0, sortBy, status, categoryId }),
-    supabase.from('categories').select('id, name, slug').order('name'),
-  ])
+  const posts = await getFeedPosts({ userId: user?.id, page: 0, sortBy, status, categoryId })
 
   // Fetch bookmarked post IDs and vote statuses for the initial page
   let bookmarkedIds: string[] = []
@@ -74,7 +71,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         userId={user?.id ?? null}
         initialSort={sortBy}
         initialStatus={status}
-        categories={(categories ?? []) as Category[]}
         initialCategoryId={categoryId ?? null}
       />
     </div>

@@ -139,7 +139,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
       {/* Interest tags */}
       {interestTags.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Interests</p>
+          <p className="text-sm font-medium text-muted-foreground">Types of content</p>
           <div className="flex flex-wrap gap-1">
             {interestTags.map((tag) => (
               <Link key={tag} href={`/tag/${encodeURIComponent(tag)}`}>

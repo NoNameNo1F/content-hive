@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts'
 
 interface DataPoint {
   name: string
@@ -23,6 +24,20 @@ interface BarChartCardProps {
 }
 
 const DEFAULT_COLOR = 'hsl(var(--primary))'
+
+function ChartTooltip({ active, payload, label }: TooltipContentProps<number, string>) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold mb-1">{label}</p>
+      {payload.map((p) => (
+        <p key={String(p.dataKey)} className="text-muted-foreground">
+          {p.name}: <span className="text-foreground font-medium">{p.value}</span>
+        </p>
+      ))}
+    </div>
+  )
+}
 
 export function BarChartCard({ title, data, defaultColor = DEFAULT_COLOR }: BarChartCardProps) {
   const max = Math.max(...data.map((d) => d.count), 1)
@@ -46,20 +61,7 @@ export function BarChartCard({ title, data, defaultColor = DEFAULT_COLOR }: BarC
             axisLine={false}
             width={24}
           />
-          <Tooltip
-            cursor={{ fill: 'hsl(var(--accent))' }}
-            contentStyle={{
-              fontSize: 12,
-              borderRadius: 8,
-              border: '1px solid hsl(var(--border))',
-              background: 'hsl(var(--card))',
-              color: 'hsl(var(--foreground))',
-              boxShadow: '0 4px 12px hsl(var(--background) / 0.5)',
-            }}
-            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-            itemStyle={{ color: 'hsl(var(--muted-foreground))' }}
-            formatter={(v: number | undefined) => [v ?? 0, 'Posts']}
-          />
+          <Tooltip content={ChartTooltip} cursor={{ fill: 'hsl(var(--accent))' }} />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.color ?? defaultColor} />

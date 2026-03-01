@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { toggleVote } from '@/features/content/actions/toggle-vote'
 
 interface VoteButtonsProps {
@@ -61,7 +62,7 @@ export function VoteButtons({ postId, initialVotesCount, initialUserVote }: Vote
           userVote === 1 ? 'text-primary' : 'text-muted-foreground'
         }`}
       >
-        ▲
+        <ThumbsUp size={14} />
       </button>
       <span className={`min-w-[1.5rem] text-center text-xs font-medium tabular-nums ${scoreClass}`}>
         {votesCount}
@@ -75,7 +76,7 @@ export function VoteButtons({ postId, initialVotesCount, initialUserVote }: Vote
           userVote === -1 ? 'text-destructive' : 'text-muted-foreground'
         }`}
       >
-        ▼
+        <ThumbsDown size={14} />
       </button>
     </div>
   )

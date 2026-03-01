@@ -12,6 +12,18 @@ import { VoteButtons } from '@/features/content/components/vote-buttons'
 import { cn } from '@/lib/utils'
 import type { ContentStatus, PostWithRelations } from '@/types'
 
+function relativeTime(date: string): string {
+  const diff = Date.now() - new Date(date).getTime()
+  const mins  = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days  = Math.floor(diff / 86_400_000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins} minute${mins !== 1 ? 's' : ''} ago`
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  if (days < 30)  return `${days} day${days !== 1 ? 's' : ''} ago`
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 const STATUS_STYLES: Record<ContentStatus, string> = {
   available:   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   unavailable: 'bg-muted text-muted-foreground',
@@ -238,6 +250,8 @@ export function PostCard({ post, isBookmarked = false, currentUserId, userVote =
               </span>
             )}
             <span>by {author?.username ?? 'Unknown'}</span>
+            <span className="opacity-50">·</span>
+            <span>{relativeTime(post.created_at)}</span>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={post.status} />
